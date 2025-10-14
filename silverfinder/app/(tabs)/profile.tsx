@@ -3,24 +3,16 @@ import { StyleSheet } from "react-native";
 import EditScreenInfo from "@/components/EditScreenInfo";
 import { Text, View } from "@/components/Themed";
 
-export default function TabOneScreen() {
+export default function TabThreeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Big Red Button</Text>
-      <Text style={styles.title}>Map</Text>
-
+      <Text style={styles.title}>My Information</Text>
       <View
         style={styles.separator}
         lightColor="#eee"
         darkColor="rgba(255,255,255,0.1)"
       />
-      <Text style={styles.title}>Community</Text>
-      <View
-        style={styles.separator}
-        lightColor="#eee"
-        darkColor="rgba(255,255,255,0.1)"
-      />
-      <Text style={styles.title}>Privacy Warning</Text>
+      <EditScreenInfo path="app/(tabs)/two.tsx" />
     </View>
   );
 }
