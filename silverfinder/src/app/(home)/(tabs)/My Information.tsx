@@ -1,16 +1,10 @@
-// Displays the setting screen - my information
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import { supabase } from '../../../lib/supabase'
-import { StyleSheet, View, Alert } from 'react-native'
-import { Button, Input } from '@rneui/themed'
-import { Session } from '@supabase/supabase-js'
 import { useAuth } from '../../../providers/AuthProvider'
 
-import { ScrollView } from 'react-native-gesture-handler'
-
 export default function MyInformationScreen() {
-  const {session} = useAuth();
-
+  const { session } = useAuth()
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
   const [website, setWebsite] = useState('')
@@ -27,61 +21,41 @@ export default function MyInformationScreen() {
 
       const { data, error, status } = await supabase
         .from('profiles')
-        .select(`username, website, avatar_url,full_name`)
+        .select(`username, website, avatar_url`)
         .eq('id', session?.user.id)
         .single()
-      if (error && status !== 406) {
-        throw error
-      }
 
+      if (error && status !== 406) throw error
       if (data) {
         setUsername(data.username)
         setWebsite(data.website)
         setAvatarUrl(data.avatar_url)
-       // setFullname(data.full_name)
       }
     } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert(error.message)
-      }
+      if (error instanceof Error) Alert.alert(error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  async function updateProfile({
-    username,
-    website,
-    avatar_url,
-
-  }: {
-    username: string
-    website: string
-    avatar_url: string
-    //full_name: string
-  }) {
+  async function updateProfile() {
     try {
       setLoading(true)
       if (!session?.user) throw new Error('No user on the session!')
 
       const updates = {
-        id: session?.user.id,
+        id: session.user.id,
         username,
         website,
-        avatar_url,
-
+        avatar_url: avatarUrl,
         updated_at: new Date(),
       }
 
       const { error } = await supabase.from('profiles').upsert(updates)
-
-      if (error) {
-        throw error
-      }
+      if (error) throw error
+      Alert.alert('Profile updated!')
     } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert(error.message)
-      }
+      if (error instanceof Error) Alert.alert(error.message)
     } finally {
       setLoading(false)
     }
@@ -89,33 +63,26 @@ export default function MyInformationScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style ={{ alignItems: 'center'}}>
-      
-    </View>
+      <Text style={styles.label}>Email</Text>
+      <TextInput style={[styles.input, styles.disabled]} value={session?.user?.email || ''} editable={false} />
 
+      <Text style={styles.label}>Username</Text>
+      <TextInput style={styles.input} value={username} onChangeText={setUsername} />
 
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input label="Email" value={session?.user?.email} disabled />
-      </View>
-      
-      <View style={styles.verticallySpaced}>
-        <Input label="Username" value={username || ''} onChangeText={(text) => setUsername(text)} />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Input label="Website" value={website || ''} onChangeText={(text) => setWebsite(text)} />
-      </View>
+      <Text style={styles.label}>Website</Text>
+      <TextInput style={styles.input} value={website} onChangeText={setWebsite} />
 
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button
-          title={loading ? 'Loading ...' : 'Update'}
-          onPress={() => updateProfile({ username, website, avatar_url: avatarUrl})}
-          disabled={loading}
-        />
-      </View>
+      <TouchableOpacity
+        style={[styles.button, loading && { opacity: 0.6 }]}
+        onPress={updateProfile}
+        disabled={loading}
+      >
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update</Text>}
+      </TouchableOpacity>
 
-      <View style={styles.verticallySpaced}>
-        <Button title="Sign Out" onPress={() => supabase.auth.signOut()} />
-      </View>
+      <TouchableOpacity style={styles.buttonSecondary} onPress={() => supabase.auth.signOut()}>
+        <Text style={styles.buttonText}>Sign Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   )
 }
@@ -125,12 +92,39 @@ const styles = StyleSheet.create({
     marginTop: 40,
     padding: 12,
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  label: {
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#333',
   },
-  mt20: {
-    marginTop: 20,
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  disabled: {
+    backgroundColor: '#f2f2f2',
+  },
+  button: {
+    backgroundColor: '#3b82f6',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonSecondary: {
+    backgroundColor: '#ef4444',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 })
