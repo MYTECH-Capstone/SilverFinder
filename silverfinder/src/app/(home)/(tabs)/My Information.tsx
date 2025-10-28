@@ -1,106 +1,59 @@
 import React, { useState, useEffect } from 'react'
 import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native'
-//import { Text, View } from '@/components/Themed';
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../providers/AuthProvider'
+import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 
 export default function MyInformationScreen() {
   const { session } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [username, setUsername] = useState('')
-  const [website, setWebsite] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const router = useRouter()
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     if (session) getProfile()
   }, [session])
 
+  useFocusEffect (
+  React.useCallback(() => {
+    if (session) getProfile();
+    }, [session])
+  );
+
   async function getProfile() {
     try {
-      setLoading(true)
-      if (!session?.user) throw new Error('No user on the session!')
-
-      const { data, error, status } = await supabase
+      const { data, error} = await supabase
         .from('profiles')
-        .select(`username, website, avatar_url`)
+        .select('*')
         .eq('id', session?.user.id)
         .single()
-
-      if (error && status !== 406) throw error
-      if (data) {
-        setUsername(data.username)
-        setWebsite(data.website)
-        setAvatarUrl(data.avatar_url)
-      }
+      if(error) throw error
+      setProfile(data)
     } catch (error) {
-      if (error instanceof Error) Alert.alert(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function updateProfile() {
-    try {
-      setLoading(true)
-      if (!session?.user) throw new Error('No user on the session!')
-
-      const updates = {
-        id: session.user.id,
-        username,
-        website,
-        avatar_url: avatarUrl,
-        updated_at: new Date(),
-      }
-
-      const { error } = await supabase.from('profiles').upsert(updates)
-      if (error) throw error
-      Alert.alert('Profile updated!')
-    } catch (error) {
-      if (error instanceof Error) Alert.alert(error.message)
-    } finally {
-      setLoading(false)
-    }
+      console.error(error)
+    }   
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffd8a8'}}> 
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Settings Page</Text>
+
       <TouchableOpacity style={styles.emergencyButton}>
         <Text style={styles.emergencyText}>
           Press this button if you need immediate help!
         </Text>
       </TouchableOpacity>
-      <Text style={styles.label}>Email</Text>
-      <TextInput style={[styles.input, styles.disabled]} value={session?.user?.email || ''} editable={false} />
-
-      <Text style={styles.label}>Username</Text>
-      <TextInput style={styles.input} value={username} onChangeText={setUsername} />
-
-      <Text style={styles.label}>Website</Text>
-      <TextInput style={styles.input} value={website} onChangeText={setWebsite} />
-
-      <TouchableOpacity
-        style={[styles.button, loading && { opacity: 0.6 }]}
-        onPress={updateProfile}
-        disabled={loading}
-      >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update</Text>}
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.buttonSecondary} onPress={() => supabase.auth.signOut()}>
-        <Text style={styles.buttonText}>Sign Out</Text>
-      </TouchableOpacity>
 
       <View style={styles.profileSection}>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity style={styles.editButton} onPress={() => router.push('/(editinfo)/EditProfile')}>
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
+
         <Image
-        source={{ uri: 'https://i.pinimg.com/736x/79/ed/a3/79eda3184ce3eae8ae30bff6ee6ca2e3.jpg' }}
+        source={{ uri: profile?.avatar_url || 'https://ibcces.org/wp-content/uploads/2019/03/blank-profile-picture-763x1024.jpg' }}
         style={styles.profileImage}
         />
-        <Text style={styles.profileName}> Rosie Johnson </Text>
+        <Text style={styles.profileName}> {profile?.username}</Text>
       </View>
 
       <View style={styles.infoSection}>
@@ -110,42 +63,42 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Race</Text>
-            <Text style={styles.value}>White</Text>
+            <Text style={styles.value}>{profile?.race}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Age</Text>
-            <Text style={styles.value}>78</Text>
+            <Text style={styles.value}>{profile?.age}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Gender</Text>
-            <Text style={styles.value}>Female</Text>
+            <Text style={styles.value}>{profile?.gender}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Height</Text>
-            <Text style={styles.value}>5'4</Text>
+            <Text style={styles.value}>{profile?.height}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Weight</Text>
-            <Text style={styles.value}>140 pounds</Text>
+            <Text style={styles.value}>{profile?.weight}</Text>
             </View>
           
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Eye Color</Text>
-            <Text style={styles.value}>Brown</Text>
+            <Text style={styles.value}>{profile?.eye_color}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Hair Color</Text>
-            <Text style={styles.value}>Gray</Text>
+            <Text style={styles.value}>{profile?.hair_color}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Distinguishing Marks</Text>
-            <Text style={styles.value}>left ear mole</Text>
+            <Text style={styles.value}>{profile?.dis_marks}</Text>
             </View>  
         </View>
       </View>
@@ -156,34 +109,33 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Blood Type</Text>
-            <Text style={styles.value}>O+</Text>
+            <Text style={styles.value}>{profile?.blood_type}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Conditions</Text>
-            <Text style={styles.value}>Diabetes, Hypertension</Text>
+            <Text style={styles.value}>{profile?.conditions}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Medications</Text>
-            <Text style={styles.value}>Metformin, Lisinopril</Text>
+            <Text style={styles.value}>{profile?.medications}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Allergies</Text>
-            <Text style={styles.value}>Penicillin</Text>
+            <Text style={styles.value}>{profile?.allergies}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Devices</Text>
-            <Text style={styles.value}>Hearing Aid</Text>
+            <Text style={styles.value}>{profile?.devices}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Physician</Text>
-            <Text style={styles.value}>Dr. Smith</Text>
+            <Text style={styles.value}>{profile?.physician}</Text>
           </View>
-
         </View>
       </View>
 
@@ -193,14 +145,13 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Vehicle Description</Text>
-            <Text style={styles.value}>Gray Toyota Camry</Text>
+            <Text style={styles.value}>{profile?.vehicle_descr}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Plate Number</Text>
-            <Text style={styles.value}>123 4567</Text>
+            <Text style={styles.value}>{profile?.plate_number}</Text>
           </View>
-
         </View>
       </View>
 
@@ -329,4 +280,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 10,
   },
-})
+});
+
+
