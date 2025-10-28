@@ -3,9 +3,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 
 import { Tabs } from 'expo-router'; 
+import AuthProvider from '../../../providers/AuthProvider';
 
 export default function TabsNavigator() {
     return(
+        
         <Tabs>
             <Tabs.Screen name='Appointments' options={{title: 'Appointments', tabBarIcon: () => 
             (<Feather 
@@ -28,7 +30,15 @@ export default function TabsNavigator() {
                 color="black"  />
             ),    
         }} />
+        <Tabs.Screen name='CreateGroup' options={{title: 'Groups', tabBarIcon: () => 
+            (<Ionicons 
+                name="people" 
+                size={24} 
+                color="black"  />
+            ),    
+        }} />
         
         </Tabs>
+        
     );
 }
