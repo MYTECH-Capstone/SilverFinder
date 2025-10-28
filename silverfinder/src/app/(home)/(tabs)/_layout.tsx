@@ -1,6 +1,6 @@
-// will be out tabs navigator, adding a tabs.screen component will require a corressponding.tsx file 
-import Ionicons from '@expo/vector-icons/Ionicons';
-import Feather from '@expo/vector-icons/Feather';
+// will be out tabs navigator, adding a tabs.screen component will require a corressponding.tsx file
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
 
 import { Tabs } from 'expo-router'; 
 import AuthProvider from '../../../providers/AuthProvider';
