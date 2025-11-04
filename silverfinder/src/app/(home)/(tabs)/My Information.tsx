@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native'
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../providers/AuthProvider'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
+import Avatar from '../../components/Avatar'
+
 
 export default function MyInformationScreen() {
   const { session } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (session) getProfile()
@@ -22,17 +25,22 @@ export default function MyInformationScreen() {
 
   async function getProfile() {
     try {
+      setLoading(true)
       const { data, error} = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session?.user.id)
         .single()
+
       if(error) throw error
       setProfile(data)
     } catch (error) {
-      console.error(error)
-    }   
+      console.error('error loading profile', error)
+    } finally {
+      setLoading(false)
+    }  
   }
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffd8a8'}}> 
@@ -49,11 +57,13 @@ export default function MyInformationScreen() {
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        <Image
-        source={{ uri: profile?.avatar_url || 'https://ibcces.org/wp-content/uploads/2019/03/blank-profile-picture-763x1024.jpg' }}
-        style={styles.profileImage}
-        />
-        <Text style={styles.profileName}> {profile?.username}</Text>
+         <Avatar
+          url={profile?.avatar_url || null}
+          size={100}
+          onUpload={() => {}} 
+  />
+        
+        <Text style={styles.profileName}> {profile?.username || ''}</Text>
       </View>
 
       <View style={styles.infoSection}>
@@ -63,42 +73,42 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Race</Text>
-            <Text style={styles.value}>{profile?.race}</Text>
+            <Text style={styles.value}>{profile?.race || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Age</Text>
-            <Text style={styles.value}>{profile?.age}</Text>
+            <Text style={styles.value}>{profile?.age || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Gender</Text>
-            <Text style={styles.value}>{profile?.gender}</Text>
+            <Text style={styles.value}>{profile?.gender || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Height</Text>
-            <Text style={styles.value}>{profile?.height}</Text>
+            <Text style={styles.value}>{profile?.height || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Weight</Text>
-            <Text style={styles.value}>{profile?.weight}</Text>
+            <Text style={styles.value}>{profile?.weight || ''}</Text>
             </View>
           
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Eye Color</Text>
-            <Text style={styles.value}>{profile?.eye_color}</Text>
+            <Text style={styles.value}>{profile?.eye_color || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Hair Color</Text>
-            <Text style={styles.value}>{profile?.hair_color}</Text>
+            <Text style={styles.value}>{profile?.hair_color || ''}</Text>
             </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Distinguishing Marks</Text>
-            <Text style={styles.value}>{profile?.dis_marks}</Text>
+            <Text style={styles.value}>{profile?.dis_marks || ''}</Text>
             </View>  
         </View>
       </View>
@@ -109,32 +119,32 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Blood Type</Text>
-            <Text style={styles.value}>{profile?.blood_type}</Text>
+            <Text style={styles.value}>{profile?.blood_type || ''}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Conditions</Text>
-            <Text style={styles.value}>{profile?.conditions}</Text>
+            <Text style={styles.value}>{profile?.conditions || ''}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Medications</Text>
-            <Text style={styles.value}>{profile?.medications}</Text>
+            <Text style={styles.value}>{profile?.medications || ''}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Allergies</Text>
-            <Text style={styles.value}>{profile?.allergies}</Text>
+            <Text style={styles.value}>{profile?.allergies || ''}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Devices</Text>
-            <Text style={styles.value}>{profile?.devices}</Text>
-          </View>
+            <Text style={styles.value}>{profile?.devices || ''}</Text>
+          </View> 
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Physician</Text>
-            <Text style={styles.value}>{profile?.physician}</Text>
+            <Text style={styles.value}>{profile?.physician || ''}</Text>
           </View>
         </View>
       </View>
@@ -145,12 +155,12 @@ export default function MyInformationScreen() {
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Vehicle Description</Text>
-            <Text style={styles.value}>{profile?.vehicle_descr}</Text>
+            <Text style={styles.value}>{profile?.vehicle_descr || ''}</Text>
           </View>
 
           <View style={styles.descriptorBox}>
             <Text style={styles.descrLabel}>Plate Number</Text>
-            <Text style={styles.value}>{profile?.plate_number}</Text>
+            <Text style={styles.value}>{profile?.plate_number || ''}</Text>
           </View>
         </View>
       </View>

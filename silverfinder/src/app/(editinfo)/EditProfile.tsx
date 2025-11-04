@@ -3,6 +3,7 @@ import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView,
 import { useAuth } from '../../providers/AuthProvider'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'expo-router'
+import Avatar from '../components/Avatar'
 
 
 export default function EditProfile() {
@@ -12,7 +13,7 @@ export default function EditProfile() {
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
   const [website, setWebsite] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   /*const [race, setRace] = useState('')
   const [age, setAge] = useState('')
@@ -47,10 +48,13 @@ export default function EditProfile() {
         .single()
 
       if (error && status !== 406) throw error
-      setUsername(data.username)
-      setWebsite(data.website)
-      setAvatarUrl(data.avatar_url || 'https://ibcces.org/wp-content/uploads/2019/03/blank-profile-picture-763x1024.jpg')
-    } catch (error) {
+
+      if(data) {
+      setUsername(data.username || '')
+      setWebsite(data.website || '')
+      setAvatarUrl(data.avatar_url || '')
+      }
+    } catch (error: any) {
         Alert.alert(error.message)
     } finally {
       setLoading(false)  
@@ -60,20 +64,26 @@ export default function EditProfile() {
   async function updateProfile() {
     try {
       setLoading(true)
-      const updates = {
-        id: session.user.id,
-        username, website,
-        avatar_url:avatarUrl,
-        updated_at: new Date(),
-      };
 
-      console.log('Updating profile with:', updates)
-      const { error } = await supabase.from('profiles').upsert(updates)
+      const updates: any = {
+        id: session.user.id,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (username) updates.username = username
+      if (website) updates.website = website
+      if (avatarUrl) updates.avatar_url = avatarUrl
+
+      const { error } = await supabase
+      .from('profiles').update(updates)
+      .eq('id', session.user.id)
+
       if (error) throw error
+
       Alert.alert('Profile updated!')
-      router.replace('/(tabs)/My Information')
-    } catch (error) {
-      if (error instanceof Error) Alert.alert(error.message)
+      router.push('/(tabs)/My Information')
+    } catch (error: any) {
+       Alert.alert('update error', error.message)
     } finally {
       setLoading(false)
     }
@@ -83,6 +93,15 @@ export default function EditProfile() {
     <View style={{ flex: 1, backgroundColor: '#ffd8a8' }}>
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Edit Profile</Text>
+
+        <Avatar
+          url={avatarUrl}
+          size={100}
+          onUpload={(filePath: string) => {
+          setAvatarUrl(filePath)
+          }}
+          canUpload={true}
+/>
 
         <Text style={styles.label}>Email</Text>
         <TextInput style={[styles.input, styles.disabled]} value={session?.user?.email || ''} editable={false} />
