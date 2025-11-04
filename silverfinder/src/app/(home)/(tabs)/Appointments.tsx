@@ -2,17 +2,49 @@
 import {
   StyleSheet,
   View,
-  Alert,
-  TextInput,
   Text,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
-  Image,
 } from "react-native";
 import { BasicCalendar } from "../../../components/Calendar";
+import { EventsList } from "../../../components/EventList";
+import { useState } from "react";
+import { toDateId } from "@marceloterreiro/flash-calendar";
+import { EventAdder } from "../../../components/EventAdder";
+
+type Event = {
+  subject: string;
+  date: string;
+  time: string;
+  location: string;
+  category: string;
+  color: string;
+  memo?: string;
+};
 
 export default function MainTabScreen() {
+  const [selectedDate, setSelectedDate] = useState(toDateId(new Date()));
+  const [events, setEvents] = useState<{ [dateId: string]: Event[] }>({});
+  const handleAddEvent = (newEvent) => {
+    const targetDate = newEvent.date;
+    setEvents((prev) => ({
+      ...prev,
+      [targetDate]: [...(prev[targetDate] || []), newEvent],
+    }));
+  };
+
+  const handleDeleteEvent = (eventToDelete: Event) => {
+    setEvents((prev) => {
+      const dateId = eventToDelete.date;
+      const updatedEvents =
+        prev[dateId]?.filter((ev) => ev !== eventToDelete) || [];
+      return {
+        ...prev,
+        [dateId]: updatedEvents,
+      };
+    });
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: "#ffd8a8" }}>
       <ScrollView style={styles.container}>
@@ -23,56 +55,25 @@ export default function MainTabScreen() {
         </TouchableOpacity>
 
         <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Add New Event</Text>
-
-          <View style={styles.grid}>
-            <View style={styles.descriptorBox}>
-              <Text style={styles.descrLabel}>Family</Text>
-            </View>
-
-            <View style={styles.descriptorBox}>
-              <Text style={styles.descrLabel}>Friends</Text>
-            </View>
-
-            <View style={styles.descriptorBox}>
-              <Text style={styles.descrLabel}>Medical</Text>
-            </View>
-
-            <View style={styles.descriptorBox}>
-              <Text style={styles.descrLabel}>Other</Text>
-            </View>
-          </View>
+          <EventAdder onAddEvent={handleAddEvent} selectedDate={selectedDate} />
         </View>
 
         <View style={styles.infoSection}>
           <View>
-            <BasicCalendar />
+            <BasicCalendar
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
           </View>
         </View>
 
-        <View style={styles.infoSectionUpcoming}>
-          <Text style={styles.sectionTitle}> Upcoming</Text>
-          <View style={styles.gridUpcoming}>
-            <View style={styles.descriptorBoxUpcoming}>
-              <Text style={styles.descrLabelUpcoming}>Lunch with Sarah</Text>
-              <Text style={styles.value}>date</Text>
-              <Text style={styles.value}>time</Text>
-              <Text style={styles.value}>location</Text>
-            </View>
-
-            <View style={styles.descriptorBoxUpcoming}>
-              <Text style={styles.descrLabelUpcoming}>Doctor Appointment</Text>
-              <Text style={styles.value}>date</Text>
-              <Text style={styles.value}>time</Text>
-              <Text style={styles.value}>location</Text>
-            </View>
-            <View style={styles.descriptorBoxUpcoming}>
-              <Text style={styles.descrLabelUpcoming}>Pick up medicine</Text>
-              <Text style={styles.value}>date</Text>
-              <Text style={styles.value}>time</Text>
-              <Text style={styles.value}>location</Text>
-            </View>
-          </View>
+        <View style={[styles.infoSectionUpcoming, {}]}>
+          <Text style={styles.sectionTitle}>Upcoming</Text>
+          <EventsList
+            selectedDate={selectedDate}
+            events={events[selectedDate] || []}
+            onDeleteEvent={handleDeleteEvent}
+          />
         </View>
       </ScrollView>
     </View>
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
     color: "#ff5f15",
