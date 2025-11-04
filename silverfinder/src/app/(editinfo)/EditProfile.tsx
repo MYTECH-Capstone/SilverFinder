@@ -14,7 +14,7 @@ export default function EditProfile() {
   const [website, setWebsite] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
 
-  const [race, setRace] = useState('')
+  /*const [race, setRace] = useState('')
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
   const [height, setHeight] = useState('')
@@ -30,7 +30,7 @@ export default function EditProfile() {
   const [physician, setPhysician] = useState('')
   const [vehicleDescription, setVehicleDescription] = useState('')
   const [plateNumber, setPlateNumber] = useState('')
-
+*/
   useEffect(() => {
     if (session) getProfile()
   }, [session])
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
 
 
 /* 
-race,
+        race,
         age: parseInt(age),
         gender, height, weight,
         eye_color: eyeColor,
