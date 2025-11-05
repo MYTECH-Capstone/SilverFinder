@@ -30,8 +30,6 @@ export default function Avatar({ url, size = 100, onUpload, canUpload = false }:
     }
   }, [url])
 
-
-
   async function uploadAvatar() {
     try {
       setUploading(true)
@@ -41,39 +39,40 @@ export default function Avatar({ url, size = 100, onUpload, canUpload = false }:
         quality: 1,
       })
 
-      if (result.canceled) return
+      if (result.canceled || !result.assets || result.assets.length === 0) return
 
       const image = result.assets[0]
-      const file = await fetch(image.uri)
-      const blob = await file.blob()
+      const arraybuffer = await fetch(image.uri).then((res) => res.arrayBuffer())
       
       // Get proper file extension
-      let fileExt = 'jpg' // default
-      if (image.uri) {
-        const uriParts = image.uri.split('.')
-        const lastPart = uriParts[uriParts.length - 1].split('?')[0]
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lastPart.toLowerCase())) {
-          fileExt = lastPart.toLowerCase()
-        }
+      const uriParts = image.uri.split('.')
+      let fileExt = uriParts.pop()?.split('?')[0].toLowerCase() ?? 'jpeg'
+
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+      if(!allowedExtensions.includes(fileExt)) {
+        const mimeExt = image.mimeType?.split('/').pop()?.toLowerCase()
+        fileExt = allowedExtensions.includes(mimeExt) ? mimeExt : 'jpeg' ;
       }
-      
+
+      const contentType = image.mimeType ?? `image/${fileExt}` ;
+
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      
+
       console.log('Uploading file:', fileName)
       
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
+        .upload(fileName, arraybuffer, {
+          contentType: contentType,
           upsert: false
         })
 
       if (uploadError) throw uploadError
 
-      console.log('Upload successful:', fileName)
-      onUpload(fileName)
+      console.log('Upload successful:', data.path)
+      onUpload(data.path)
     } catch (error: any) {
-      Alert.alert('Upload failed', error.message)
+      Alert.alert('Upload failed', error.message || 'Error occurred during upload.')
       console.error('Upload error:', error)
     } finally {
       setUploading(false)
