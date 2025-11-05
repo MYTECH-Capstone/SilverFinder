@@ -12,10 +12,8 @@ export default function EditProfile() {
 
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
-  const [website, setWebsite] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-
-  /*const [race, setRace] = useState('')
+  const [race, setRace] = useState('')
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
   const [height, setHeight] = useState('')
@@ -31,7 +29,7 @@ export default function EditProfile() {
   const [physician, setPhysician] = useState('')
   const [vehicleDescription, setVehicleDescription] = useState('')
   const [plateNumber, setPlateNumber] = useState('')
-*/
+
   useEffect(() => {
     if (session) getProfile()
   }, [session])
@@ -51,8 +49,23 @@ export default function EditProfile() {
 
       if(data) {
       setUsername(data.username || '')
-      setWebsite(data.website || '')
       setAvatarUrl(data.avatar_url || '')
+      setRace(data.race || '')
+      setAge(data.age?.toString() || '')
+      setGender(data.gender || '')
+      setHeight(data.height || '')
+      setWeight(data.weight || '')
+      setEyeColor(data.eye_color || '')
+      setHairColor(data.hair_color || '')
+      setMarks(data.dis_marks || '')
+      setBloodType(data.blood_type || '')
+      setConditions(data.conditions || '')
+      setMedications(data.medications || '')
+      setAllergies(data.allergies || '')
+      setDevices(data.devices || '')
+      setPhysician(data.physician || '')
+      setVehicleDescription(data.vehicle_descr || '')
+      setPlateNumber(data.plate_number || '')
       }
     } catch (error: any) {
         Alert.alert(error.message)
@@ -67,11 +80,22 @@ export default function EditProfile() {
 
       const updates: any = {
         id: session.user.id,
+        race,
+        age: parseInt(age),
+        gender, height, weight,
+        eye_color: eyeColor,
+        hair_color: hairColor,
+        dis_marks: marks,
+        blood_type: bloodType,
+        conditions, medications, allergies,
+        devices, physician,
+        vehicle_descr: vehicleDescription,
+        plate_number: plateNumber,
         updated_at: new Date().toISOString(),
       }
 
+
       if (username) updates.username = username
-      if (website) updates.website = website
       if (avatarUrl) updates.avatar_url = avatarUrl
 
       const { error } = await supabase
@@ -109,10 +133,55 @@ export default function EditProfile() {
         <Text style={styles.label}>Username</Text>
         <TextInput style={[styles.input]} value={username} onChangeText={setUsername} />
 
-        <Text style={styles.label}>Website</Text>
-        <TextInput style={[styles.input]} value={website} onChangeText={setWebsite} />
-
         <Text style={styles.title}>User Info </Text>
+
+        <Text style={styles.label}>Race</Text>
+        <TextInput style={styles.input} value={race} onChangeText={setRace} />
+
+        <Text style={styles.label}>Age</Text>
+        <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+
+        <Text style={styles.label}>Gender</Text>
+        <TextInput style={styles.input} value={gender} onChangeText={setGender} />
+
+        <Text style={styles.label}>Height</Text>
+        <TextInput style={styles.input} value={height} onChangeText={setHeight} />
+
+        <Text style={styles.label}>Weight</Text>
+        <TextInput style={styles.input} value={weight} onChangeText={setWeight} />
+
+        <Text style={styles.label}>Eye Color</Text>
+        <TextInput style={styles.input} value={eyeColor} onChangeText={setEyeColor} />
+
+        <Text style={styles.label}>Hair Color</Text>
+        <TextInput style={styles.input} value={hairColor} onChangeText={setHairColor} />
+
+        <Text style={styles.label}>Distinguishing Marks</Text>
+        <TextInput style={styles.input} value={marks} onChangeText={setMarks} />
+
+        <Text style={styles.label}>Blood Type</Text>
+        <TextInput style={styles.input} value={bloodType} onChangeText={setBloodType} />
+
+        <Text style={styles.label}>Conditions</Text>
+        <TextInput style={styles.input} value={conditions} onChangeText={setConditions} />
+
+        <Text style={styles.label}>Medications</Text>
+        <TextInput style={styles.input} value={medications} onChangeText={setMedications} />
+
+        <Text style={styles.label}>Allergies</Text>
+        <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} />
+
+        <Text style={styles.label}>Devices</Text>
+        <TextInput style={styles.input} value={devices} onChangeText={setDevices} />
+
+        <Text style={styles.label}>Physician</Text>
+        <TextInput style={styles.input} value={physician} onChangeText={setPhysician} />
+
+        <Text style={styles.label}>Vehicle Description</Text>
+        <TextInput style={styles.input} value={vehicleDescription} onChangeText={setVehicleDescription} />
+
+        <Text style={styles.label}>Plate Number</Text>
+        <TextInput style={styles.input} value={plateNumber} onChangeText={setPlateNumber} />
 
        
         <TouchableOpacity
@@ -182,90 +251,3 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 });
-
-
-/* 
-        race,
-        age: parseInt(age),
-        gender, height, weight,
-        eye_color: eyeColor,
-        hair_color: hairColor,
-        dis_marks: marks,
-        blood_type: bloodType,
-        conditions, medications, allergies,
-        devices, physician,
-        vehicle_descr: vehicleDescription,
-        plate_number: plateNumber,
-        updated_at: new Date(),
-        */
-
-
-        /*
-         <Text style={styles.label}>Race</Text>
-        <TextInput style={styles.input} value={race} onChangeText={setRace} />
-
-        <Text style={styles.label}>Age</Text>
-        <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
-
-        <Text style={styles.label}>Gender</Text>
-        <TextInput style={styles.input} value={gender} onChangeText={setGender} />
-
-        <Text style={styles.label}>Height</Text>
-        <TextInput style={styles.input} value={height} onChangeText={setHeight} />
-
-        <Text style={styles.label}>Weight</Text>
-        <TextInput style={styles.input} value={weight} onChangeText={setWeight} />
-
-        <Text style={styles.label}>Eye Color</Text>
-        <TextInput style={styles.input} value={eyeColor} onChangeText={setEyeColor} />
-
-        <Text style={styles.label}>Hair Color</Text>
-        <TextInput style={styles.input} value={hairColor} onChangeText={setHairColor} />
-
-        <Text style={styles.label}>Distinguishing Marks</Text>
-        <TextInput style={styles.input} value={marks} onChangeText={setMarks} />
-
-        <Text style={styles.label}>Blood Type</Text>
-        <TextInput style={styles.input} value={bloodType} onChangeText={setBloodType} />
-
-        <Text style={styles.label}>Conditions</Text>
-        <TextInput style={styles.input} value={conditions} onChangeText={setConditions} />
-
-        <Text style={styles.label}>Medications</Text>
-        <TextInput style={styles.input} value={medications} onChangeText={setMedications} />
-
-        <Text style={styles.label}>Allergies</Text>
-        <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} />
-
-        <Text style={styles.label}>Devices</Text>
-        <TextInput style={styles.input} value={devices} onChangeText={setDevices} />
-
-        <Text style={styles.label}>Physician</Text>
-        <TextInput style={styles.input} value={physician} onChangeText={setPhysician} />
-
-        <Text style={styles.label}>Vehicle Description</Text>
-        <TextInput style={styles.input} value={vehicleDescription} onChangeText={setVehicleDescription} />
-
-        <Text style={styles.label}>Plate Number</Text>
-        <TextInput style={styles.input} value={plateNumber} onChangeText={setPlateNumber} />
-       
-        */
-
-        /*
-        setRace(data.race || '')
-      setAge(data.age?.toString() || '')
-      setGender(data.gender || '')
-      setHeight(data.height || '')
-      setWeight(data.weight || '')
-      setEyeColor(data.eye_color || '')
-      setHairColor(data.hair_color || '')
-      setMarks(data.dis_marks || '')
-      setBloodType(data.blood_type || '')
-      setConditions(data.conditions || '')
-      setMedications(data.medications || '')
-      setAllergies(data.allergies || '')
-      setDevices(data.devices || '')
-      setPhysician(data.physician || '')
-      setVehicleDescription(data.vehicle_descr || '')
-      setPlateNumber(data.plate_number || '')
-      */

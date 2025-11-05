@@ -104,7 +104,7 @@ export default function Avatar({ url, size = 100, onUpload, canUpload = false }:
         <ActivityIndicator style={{ marginTop: 10 }} />
       ) : (
 
-        canUpload && ( <Button  title="Upload Picture" onPress={uploadAvatar} />
+        canUpload && ( <Button  title="Upload Picture" onPress={uploadAvatar} color='#db731fff' />
         
       ))}
     </View>
