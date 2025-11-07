@@ -14,7 +14,10 @@ export default function GroupPage() {
   useEffect(() => {
     const fetchGroup = async () => {
       try {
-        // Fetch group info
+        // Dsiplay fetched group ID
+        console.log('DEBUG groupId:', groupId);
+
+        // 1️⃣ Fetch the group info
         const { data: groupData, error: groupError } = await supabase
           .from('home_groups')
           .select('*')
@@ -24,20 +27,39 @@ export default function GroupPage() {
         if (groupError) throw groupError;
         setGroup(groupData);
 
-        // Fetch members with email or username from auth.users
+        //  Fetch the members from group_members
         const { data: memberData, error: memberError } = await supabase
           .from('group_members')
-          .select('user_id, role, auth_users(email)')
-          .eq('group_id', groupId)
-          .returns<{
-            user_id: string;
-            role: string;
-            auth_users: { email: string };
-          }[]>();
+          .select('user_id, role')
+          .eq('group_id', groupId);
 
         if (memberError) throw memberError;
+        if (!memberData || memberData.length === 0) {
+          setMembers([]);
+          return;
+        }
 
-        setMembers(memberData || []);
+        // Get the list of user_ids
+        const userIds = memberData.map((m) => m.user_id);
+
+        // Fetch usernames from profiles - CAN CHANGE TO FULLNAME if needed
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds);
+
+        if (profileError) throw profileError;
+
+        // Combine members with their usernames
+        const membersWithUsernames = memberData.map((member) => {
+          const profile = profileData.find((p) => p.id === member.user_id);
+          return {
+            ...member,
+            username: profile ? profile.username : 'Unknown', // If not known put unknown
+          };
+        });
+
+        setMembers(membersWithUsernames);
       } catch (err) {
         console.error('Error fetching group details:', err);
       } finally {
@@ -67,9 +89,7 @@ export default function GroupPage() {
         keyExtractor={(item) => item.user_id}
         renderItem={({ item }) => (
           <View style={styles.memberItem}>
-            <Text style={styles.memberName}>
-              {item.auth_users?.email || 'Unknown user'}
-            </Text>
+            <Text style={styles.memberName}>{item.username}</Text>
             <Text style={styles.role}>{item.role}</Text>
           </View>
         )}
@@ -89,6 +109,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
   },
-  memberName: { fontSize: 16 },
+  memberName: { fontSize: 16, fontWeight: '500' },
   role: { fontSize: 14, color: 'gray' },
 });
+

@@ -41,7 +41,7 @@ export default function MyGroups() {
             style={styles.groupCard}
             onPress={() => router.push({
               pathname: '/(home)/(tabs)/CreateGroup/GroupPage',
-              params: { groupId: item.group_id },
+              params: { groupId: item.group_id.toString() },
             })}
           >
             <Text style={styles.groupName}>{item.home_groups.group_name}</Text>

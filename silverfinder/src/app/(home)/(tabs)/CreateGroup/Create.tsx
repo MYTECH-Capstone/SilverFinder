@@ -13,6 +13,7 @@ export default function CreateGroup() {
   const router = useRouter();
 
   const handleCreate = async () => {
+    // Display fetched userID of who created group
     console.log('DEBUG user:', user);
 
     if (!groupName || !user) {
