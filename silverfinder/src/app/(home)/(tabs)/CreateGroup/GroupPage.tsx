@@ -17,7 +17,7 @@ export default function GroupPage() {
         // Dsiplay fetched group ID
         console.log('DEBUG groupId:', groupId);
 
-        // 1️⃣ Fetch the group info
+        // Fetch the group info
         const { data: groupData, error: groupError } = await supabase
           .from('home_groups')
           .select('*')
