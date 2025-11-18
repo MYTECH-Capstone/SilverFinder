@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-      "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Silver Finder to use your location so your caretaker(s) can see where you are and keep you safe.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Silver Finder to use your location so your caretaker(s) can see where you are and keep you safe.",
         "NSLocationWhenInUseUsageDescription": "Allow Silver Finder to use your location while using the app.",
         "NSLocationAlwaysUsageDescription": "Allow Silver Finder to use your location even when the app is closed so your caretakers can always find you."
       }
@@ -39,7 +39,7 @@
         }
       },
       "edgeToEdgeEnabled": true,
-      "predicitiveBackgestureEnabled": false
+      "predictiveBackGestureEnabled": false
     },
 
     "web": {
