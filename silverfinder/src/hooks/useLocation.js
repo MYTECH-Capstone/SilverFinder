@@ -26,4 +26,12 @@ const getCurrentLocation = async () => {
         speed: 
         timestamp:
     };
+
+    setLocation(locationData);
+    setIsLoading(false);
+    
+    return locationData;
+} 
+catch(err){
+    
 }
