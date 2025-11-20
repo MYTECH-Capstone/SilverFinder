@@ -15,7 +15,7 @@ export default function JoinGroup() {
       return;
     }
 
-    // 1. Fetch the user's role
+    // 1. Fetch user's role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
@@ -29,17 +29,12 @@ export default function JoinGroup() {
 
     const userRole = profile.role;
 
-    // 2. Elderly users can only join ONE group
+    // 2. Elderly users can't be in more than 1 group (enforced by RLS too)
     if (userRole === 'elderly') {
-      const { data: existingGroups, error: groupCheckError } = await supabase
+      const { data: existingGroups } = await supabase
         .from('group_members')
         .select('group_id')
         .eq('user_id', user.id);
-
-      if (groupCheckError) {
-        Alert.alert('Error', 'Could not check your current groups.');
-        return;
-      }
 
       if (existingGroups.length >= 1) {
         Alert.alert('Limit Reached', 'Elderly users may only belong to one group.');
@@ -47,7 +42,7 @@ export default function JoinGroup() {
       }
     }
 
-    // 3. Find group by join code
+    // 3. Get group by join code
     const { data: group, error: groupError } = await supabase
       .from('home_groups')
       .select('id, group_name')
@@ -59,21 +54,14 @@ export default function JoinGroup() {
       return;
     }
 
-    // 4. Add the user as a member
+    // 4. Join group
     const { error: memberError } = await supabase
       .from('group_members')
       .insert([
-        {
-          group_id: group.id,
-          user_id: user.id,
-          role: 'member',
-          user_role: userRole,
-        },
-      ])
-      .select();
+        { group_id: group.id, user_id: user.id, role: 'member', user_role: userRole },
+      ]);
 
     if (memberError) {
-      console.error('Error joining group:', memberError);
       Alert.alert('Error joining group', memberError.message);
       return;
     }
@@ -108,6 +96,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
 });
+
 
 /*import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';

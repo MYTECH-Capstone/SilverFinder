@@ -16,25 +16,17 @@ export default function CreateGroup() {
       return;
     }
 
-    // Get user role
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile) {
-      Alert.alert('Error', 'Could not verify user role.');
-      return;
-    }
-
     const userRole = profile.role;
 
-    // Generate join code
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     setJoinCode(code);
 
-    // Create the group
     const { data, error } = await supabase
       .from('home_groups')
       .insert([{ group_name: groupName, join_code: code, created_by: user.id }])
@@ -46,18 +38,9 @@ export default function CreateGroup() {
       return;
     }
 
-    // Add creator as admin
-    const { error: memberError } = await supabase
-      .from('group_members')
-      .insert([
-        { group_id: data.id, user_id: user.id, role: 'admin', user_role: userRole },
-      ]);
-
-    if (memberError) {
-      console.error('Error adding member:', memberError);
-      Alert.alert('Error adding you to the group', memberError.message);
-      return;
-    }
+    await supabase.from('group_members').insert([
+      { group_id: data.id, user_id: user.id, role: 'admin', user_role: userRole },
+    ]);
 
     Alert.alert('Success', `Group "${groupName}" created!\nJoin Code: ${code}`);
     router.back();
@@ -90,6 +73,8 @@ const styles = StyleSheet.create({
   },
   code: { textAlign: 'center', marginTop: 20, fontSize: 16, fontWeight: 'bold' },
 });
+
+
 /*import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
