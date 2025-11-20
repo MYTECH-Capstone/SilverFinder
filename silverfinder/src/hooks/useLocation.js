@@ -3,42 +3,51 @@
 
 import {useState, useEffect, useRef} from 'react';
 import * as Location from 'expo-location';
-import { LocationSubscriber } from 'expo-location/build/LocationSubscribers';
+//import { LocationSubscriber } from 'expo-location/build/LocationSubscribers';
 
 export default function useLocation(){
-
-}
-
-const getCurrentLocation = async () => {
+    const [location, setLocation] = useState(null);
+    const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const locationSubscription = useRef(null);
+    
+    const getCurrentLocation = async () => {
     try{
         setIsLoading(true);
         setError(null);
-    }
 
-    const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-    });
-
-    const locationData = {
-        latitude: 
-        longitude: 
-        accuracy: 
-        heading:
-        speed: 
-        timestamp:
-    };
-
-    setLocation(locationData);
-    setIsLoading(false);
+        const {status} = await Location.getForegroundPermissionsAsync();
+        if(status !== 'granted'){
+            setError('Location permission not granted');
+            setIsLoading(false);
+            return null;
+        }
     
-    return locationData;
-} 
-catch(err){
-    console.error('ERROR getting your current location:', err);
-    setError(err.message);
-    setIsLoading(false);
-    return null;
-}
+        const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+        });
+
+        const locationData = {
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+            accuracy: currentLocation.coords.accuracy,
+            heading: currentLocation.coords.heading,
+            speed: currentLocation.coords.speed,
+            timestamp: currentLocation.coords.timestamp,
+        };
+
+        setLocation(locationData);
+        setIsLoading(false);
+    
+        return locationData;
+        } 
+        catch(err){
+            console.error('ERROR getting your current location:', err);
+            setError(err.message);
+            setIsLoading(false);
+            return null;
+        }
+};
 
 //Regular updates
 const startWatchingLocation = async () => {
@@ -50,7 +59,7 @@ const startWatchingLocation = async () => {
             setError('Location permission not granted');
             return;
         }
-        if(LocationSubscription.current){
+        if(locationSubscription.current){
             locationSubscription.current.remove();
         }
 
@@ -62,13 +71,13 @@ const startWatchingLocation = async () => {
             },
             (newLocation) => {
                 const locationData = {
-                    latitude: 
-                    longitude:
-                    accuracy:
-                    altitude:
-                    heading:
-                    speed:
-                    timestamp:
+                    latitude: newLocation.coords.latitude,
+                    longitude: newLocation.coords.longitude,
+                    accuracy: newLocation.coords.accuracy,
+                    altitude: newLocation.coords.altitude,
+                    heading: newLocation.coords.heading,
+                    speed: newLocation.coords.speed,
+                    timestamp: newLocation.coords.timestamp,
                 };
 
                 setLocation(locationData);
@@ -77,12 +86,26 @@ const startWatchingLocation = async () => {
         );
     }
     catch(err){
-
+        console.error('Error watching location:', err);
+        setError(err.message);
+        setIsLoading(false);
     }
 };
 
-const stopWatchingLocation
+const stopWatchingLocation = () => {
+    if(locationSubscription.current){
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
+    }
+};
+
+useEffect(() => {
+    return () => {
+        stopWatchingLocation();
+    };
+}, []);
 
 return{
-    location, error, 
+    location, error, isLoading, getCurrentLocation, startWatchingLocation, stopWatchingLocation,
+};
 }
