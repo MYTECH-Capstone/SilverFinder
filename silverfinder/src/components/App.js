@@ -1,11 +1,10 @@
 //Add location permission request component to the app
 //Created on 10/27/25 by Rachel Townsend
 
-import React from "react";
-import {} from 'react-native';
 import React, {useState} from "react";
 import {View, Text, StyleSheet} from 'react-native';
 import LocationPermissionRequest from './components/LocationPermissionRequest';
+import LocationDisplay from "./components/LocationDisplay";
 
 export default function App(){
     const [hasPermission, setHasPermission] = useState(false);
@@ -18,13 +17,20 @@ export default function App(){
 
     return(
         <View style = {StyleSheet.container}>
-            <Text style = {styles.text}>✅ Location Permission Granted</Text>
-            <Text style = {styles.subtext}>Ready to implement location tracking...</Text>
+            <LocationDisplay />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+});
+
+
+/*const styles = StyleSheet.create({
     container:{
         flex: 1,
         justifyContent: 'center',
@@ -41,4 +47,4 @@ const styles = StyleSheet.create({
         color: '#F4A460',
         marginTop: 10,
     },
-});
+});*/
