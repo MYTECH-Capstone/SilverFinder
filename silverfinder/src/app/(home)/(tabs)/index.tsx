@@ -4,8 +4,8 @@
 //import { Text } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import {View, StyleSheet} from 'react-native';
-import LocationPermissionRequest from '../../../../components/LocationPermissionRequest';
-import LocationDisplay from '../../../../components/LocationDisplay';
+import LocationPermissionRequest from '../../../components/LocationPermissionRequest';
+import LocationDisplay from '../../../components/LocationDisplay';
 import * as Location from 'expo-location';
 
 export default function MainTabScreen() {
