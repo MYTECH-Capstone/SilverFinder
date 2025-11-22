@@ -22,7 +22,7 @@ export default function GroupPage() {
           .select('*')
           .eq('user_id', user.id)
           .eq('group_id', groupId)
-          .single();
+          .maybeSingle();
 
         if (!membership) {
           Alert.alert('Access Denied', "You don't belong to this group.");
@@ -30,7 +30,7 @@ export default function GroupPage() {
           return;
         }
 
-        // 2. Fetch group info
+        // 2. Load group info
         const { data: groupData, error: groupError } = await supabase
           .from('home_groups')
           .select('*')
@@ -38,40 +38,33 @@ export default function GroupPage() {
           .single();
 
         if (groupError) throw groupError;
+
         setGroup(groupData);
 
-        // 3. Fetch members
-        const { data: memberData, error: memberError } = await supabase
+        // 3. Get group members
+        const { data: mData, error: mErr } = await supabase
           .from('group_members')
           .select('user_id, role')
           .eq('group_id', groupId);
 
-        if (memberError) throw memberError;
+        if (mErr) throw mErr;
 
-        if (!memberData || memberData.length === 0) {
-          setMembers([]);
-          return;
-        }
+        const userIds = mData.map((m) => m.user_id);
 
         // 4. Fetch usernames
-        const userIds = memberData.map((m) => m.user_id);
-        const { data: profileData } = await supabase
+        const { data: pData } = await supabase
           .from('profiles')
           .select('id, username')
           .in('id', userIds);
 
-        // 5. Combine members with usernames
-        const membersWithUsernames = memberData.map((member) => {
-          const profile = profileData.find((p) => p.id === member.user_id);
-          return {
-            ...member,
-            username: profile ? profile.username : 'Unknown',
-          };
-        });
+        const combined = mData.map((m) => ({
+          ...m,
+          username: pData.find((p) => p.id === m.user_id)?.username ?? 'Unknown',
+        }));
 
-        setMembers(membersWithUsernames);
+        setMembers(combined);
       } catch (err) {
-        console.error('Error fetching group details:', err);
+        console.error('Error fetching group:', err);
       } finally {
         setLoading(false);
       }
@@ -146,6 +139,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
 
 /*import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
