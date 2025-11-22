@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../../providers/AuthProvider';
 
 export default function JoinGroup() {
   const [joinCode, setJoinCode] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -86,27 +87,62 @@ export default function JoinGroup() {
     <View style={styles.container}>
       <Text style={styles.title}>Join a Group</Text>
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          isFocused ? styles.inputFocused : styles.inputBlurred
+        ]}
         placeholder="Enter join code"
         value={joinCode}
         onChangeText={setJoinCode}
         autoCapitalize="characters"
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+       
       />
-      <Button title="Join Group" onPress={handleJoin} />
+      <TouchableOpacity style={styles.joinButton} onPress={handleJoin}>
+        <Text style={styles.joinButtonText}>Join Group</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  title: { fontSize: 24, textAlign: 'center', marginBottom: 20 },
+  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#ffd8a8' },
+  title: { fontSize: 24, textAlign: 'center', marginBottom: 20, fontWeight: 600, },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 8,
     marginBottom: 20,
-    borderRadius: 6,
+    borderRadius: 10,
+    height: 50,
   },
+  inputFocused: {
+    borderColor: '#f65e0cff',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  inputBlurred: {
+    backgroundColor: 'transparent',
+  },
+  joinButton: {
+    backgroundColor: '#ffa726ff',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,  
+  },
+  joinButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  
 });
 
 /*import React, { useState } from 'react';

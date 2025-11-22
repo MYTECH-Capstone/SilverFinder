@@ -47,28 +47,57 @@ export default function MyGroups() {
             }
           >
             <Text style={styles.groupName}>{item.home_groups.group_name}</Text>
-            <Text>Join Code: {item.home_groups.join_code}</Text>
+            <Text style={styles.joinCode}> Join Code: {item.home_groups.join_code}</Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text>You’re not in any groups yet.</Text>}
       />
 
-      <Button title="Back" onPress={() => router.back()} />
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 20, backgroundColor: '#ffd8a8' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   groupCard: {
+    backgroundColor: '#ffa826a7',
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  groupName: { fontSize: 18, fontWeight: '600' },
+  groupName: { 
+    fontSize: 18, 
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4, 
+  },
+
+  backButton: {
+    marginTop: 20,
+    backgroundColor: '#f65e0cff',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  joinCode: {
+    color: '#555',
+    fontSize: 14,
+  },
 });
 
 /*import React, { useEffect, useState } from 'react';
