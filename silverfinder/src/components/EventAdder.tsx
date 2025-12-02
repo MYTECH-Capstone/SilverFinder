@@ -1,36 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
-import { parse, isValid } from "date-fns";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { parse, isValid, format } from "date-fns";
 import { toDateId } from "@marceloterreiro/flash-calendar";
+import { saveToDeviceCalendar } from "./calService";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Family: "#3498db", // Blue
-  Friends: "#e74c3c", // Red
-  Medical: "#f39c12", // Orange
-  Other: "#27ae60", // Green
+const CATEGORY_COLORS = {
+  Family: "#3498db",
+  Friends: "#e74c3c",
+  Medical: "#f39c12",
+  Other: "#27ae60",
 };
 
-type Props = {
-  selectedDate: string;
-  onAddEvent: (event: {
-    subject: string;
-    date: string;
-    time: string;
-    location: string;
-    category: string;
-    color: string;
-    memo?: string;
-  }) => void;
-};
-
-export function EventAdder({ onAddEvent, selectedDate }: Props) {
-  const [step, setStep] = useState<"category" | "form">("category");
+export function EventAdder({ onAddEvent, selectedDate }) {
+  const [step, setStep] = useState("category");
   const [category, setCategory] = useState("");
   const [subject, setSubject] = useState("");
   const [dateInput, setDateInput] = useState("");
@@ -38,20 +28,32 @@ export function EventAdder({ onAddEvent, selectedDate }: Props) {
   const [location, setLocation] = useState("");
   const [memo, setMemo] = useState("");
 
-  const handleSelectCategory = (cat: string) => {
+  const handleSelectCategory = (cat) => {
     setCategory(cat);
     setStep("form");
   };
 
-  const handleAdd = () => {
+  const persistEvent = async (event) => {
+    try {
+      const storedEvents = await AsyncStorage.getItem("events");
+      let eventsObj = storedEvents ? JSON.parse(storedEvents) : {};
+      const dateId = event.date;
+      eventsObj[dateId] = [...(eventsObj[dateId] || []), event];
+      await AsyncStorage.setItem("events", JSON.stringify(eventsObj));
+    } catch (err) {
+      console.log("Failed to persist events:", err);
+    }
+  };
+
+  const handleAdd = async () => {
     if (!subject.trim()) return;
 
     const color = CATEGORY_COLORS[category] || "#ccc";
-    const input = dateInput.trim();
+
+    // Parse date
     let parsedDate: Date | null = null;
     const currentYear = new Date().getFullYear();
-
-    const possibleFormats = [
+    const dateFormats = [
       "yyyy-MM-dd",
       "MM/dd/yyyy",
       "M/d/yyyy",
@@ -63,58 +65,84 @@ export function EventAdder({ onAddEvent, selectedDate }: Props) {
       "M/d",
     ];
 
-    for (const fmt of possibleFormats) {
-      let candidate: Date;
+    for (const fmt of dateFormats) {
+      let d;
       if (fmt === "MM/dd" || fmt === "M/d") {
-        candidate = parse(`${input}/${currentYear}`, `${fmt}/yyyy`, new Date());
+        d = parse(`${dateInput}/${currentYear}`, `${fmt}/yyyy`, new Date());
       } else {
-        candidate = parse(input, fmt, new Date());
+        d = parse(dateInput, fmt, new Date());
       }
-
-      if (isValid(candidate)) {
-        parsedDate = candidate;
+      if (isValid(d)) {
+        parsedDate = d;
         break;
       }
     }
 
-    // Fallback to selected calendar date
     if (!parsedDate) {
-      const [year, month, day] = selectedDate.split("-").map(Number);
-      parsedDate = new Date(year, month - 1, day);
+      const [y, m, d] = selectedDate.split("-").map(Number);
+      parsedDate = new Date(y, m - 1, d);
     }
 
-    const normalizedDateId = toDateId(parsedDate);
+    const dateId = toDateId(parsedDate);
 
-    onAddEvent({
+    // Parse time safely
+    let eventStart: Date;
+    let eventEnd: Date;
+    try {
+      if (time.trim()) {
+        const timeParsed = parse(time, "hh:mm a", parsedDate);
+        if (!isValid(timeParsed)) throw new RangeError();
+        eventStart = timeParsed;
+        eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000);
+      } else {
+        throw new RangeError();
+      }
+    } catch {
+      Alert.alert(
+        "Invalid time",
+        "Event will be saved as all-day because the time entered is invalid."
+      );
+      eventStart = new Date(parsedDate.setHours(0, 0, 0, 0));
+      eventEnd = new Date(parsedDate.setHours(23, 59, 59, 999));
+    }
+
+    const newEvent = {
       subject,
-      date: normalizedDateId,
-      time,
+      date: dateId,
+      time: time.trim() ? format(eventStart, "hh:mm a") : "",
       location,
       category,
       color,
       memo: memo.trim() || undefined,
+    };
+
+    // Save to device calendar
+    await saveToDeviceCalendar({
+      ...newEvent,
+      startDate: eventStart,
+      endDate: eventEnd,
     });
 
+    // Persist locally
+    await persistEvent(newEvent);
+
+    // Notify parent
+    onAddEvent(newEvent);
+
     // Reset form
+    setStep("category");
     setSubject("");
     setDateInput("");
     setTime("");
     setLocation("");
     setMemo("");
     setCategory("");
-    setStep("category");
   };
 
-  // Category selection
   if (step === "category") {
     return (
       <View>
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: "#ff5f15", margin: 0, fontWeight: "bold" },
-          ]}
-        >
+        <Text style={[styles.sectionTitle, { color: "#ff5f15" }]}>
           Add New Event
         </Text>
         <View style={styles.infoSection}>
@@ -134,7 +162,6 @@ export function EventAdder({ onAddEvent, selectedDate }: Props) {
     );
   }
 
-  // Event form step
   const themeColor = CATEGORY_COLORS[category] || "#f89f2b";
 
   return (
@@ -142,79 +169,59 @@ export function EventAdder({ onAddEvent, selectedDate }: Props) {
       <Text style={[styles.sectionTitle, { color: themeColor }]}>
         Add {category} Event
       </Text>
+      <Text style={[styles.label, { color: themeColor }]}>Subject</Text>
+      <TextInput
+        style={styles.input}
+        value={subject}
+        onChangeText={setSubject}
+      />
 
-      <View style={[styles.descriptorBoxUpcoming, { borderColor: themeColor }]}>
-        <Text style={[styles.descrLabelUpcoming, { color: themeColor }]}>
-          Subject
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Subject"
-          value={subject}
-          onChangeText={setSubject}
-        />
+      <Text style={[styles.label, { color: themeColor }]}>Date (optional)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="11/4/2025"
+        value={dateInput}
+        onChangeText={setDateInput}
+      />
 
-        <Text style={[styles.descrLabelUpcoming, { color: themeColor }]}>
-          Date (optional)
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 11/4/2025 or Nov 4 2025"
-          value={dateInput}
-          onChangeText={setDateInput}
-        />
+      <Text style={[styles.label, { color: themeColor }]}>Time</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="10:30 AM"
+        value={time}
+        onChangeText={setTime}
+      />
 
-        <Text style={[styles.descrLabelUpcoming, { color: themeColor }]}>
-          Time
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="XX:XX AM"
-          value={time}
-          onChangeText={setTime}
-        />
+      <Text style={[styles.label, { color: themeColor }]}>Location</Text>
+      <TextInput
+        style={styles.input}
+        value={location}
+        onChangeText={setLocation}
+      />
 
-        <Text style={[styles.descrLabelUpcoming, { color: themeColor }]}>
-          Location
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Location"
-          value={location}
-          onChangeText={setLocation}
-        />
+      <Text style={[styles.label, { color: themeColor }]}>Memo</Text>
+      <TextInput style={styles.input} value={memo} onChangeText={setMemo} />
 
-        <Text style={[styles.descrLabelUpcoming, { color: themeColor }]}>
-          Memo (optional)
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="notes"
-          value={memo}
-          onChangeText={setMemo}
-        />
+      <TouchableOpacity
+        style={[styles.addButton, { backgroundColor: themeColor }]}
+        onPress={handleAdd}
+      >
+        <Text style={styles.addButtonText}>Save Event</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: themeColor }]}
-          onPress={handleAdd}
-        >
-          <Text style={styles.addButtonText}>Save Event</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => setStep("category")}
-        >
-          <Text style={styles.backButtonText}>Back to Categories</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => setStep("category")}
+      >
+        <Text style={styles.backText}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   infoSection: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -229,17 +236,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   descrLabel: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  descriptorBoxUpcoming: {
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-  },
-  descrLabelUpcoming: {
-    fontWeight: "600",
-    marginBottom: 4,
-  },
+  label: { fontWeight: "600", marginBottom: 4 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -247,16 +244,8 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 8,
   },
-  addButton: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginTop: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    textAlign: "center",
-  },
+  addButton: { borderRadius: 8, paddingVertical: 10, marginTop: 8 },
+  addButtonText: { color: "#fff", fontWeight: "700", textAlign: "center" },
   backButton: { marginTop: 10, alignItems: "center" },
-  backButtonText: { color: "#888", textDecorationLine: "underline" },
+  backText: { color: "#888", textDecorationLine: "underline" },
 });

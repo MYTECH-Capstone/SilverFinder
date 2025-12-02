@@ -1,4 +1,3 @@
-// Displays the appointment screen
 import {
   StyleSheet,
   View,
@@ -8,9 +7,13 @@ import {
 } from "react-native";
 import { BasicCalendar } from "../../../components/Calendar";
 import { EventsList } from "../../../components/EventList";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toDateId } from "@marceloterreiro/flash-calendar";
 import { EventAdder } from "../../../components/EventAdder";
+import { fetchDeviceEvents } from "../../../components/calService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CalendarShare } from "../../../components/CalendarShare";
+import { useAuth } from "../../../providers/AuthProvider";
 
 type Event = {
   subject: string;
@@ -20,12 +23,62 @@ type Event = {
   category: string;
   color: string;
   memo?: string;
+  isDeviceEvent?: boolean;
 };
 
+const STORAGE_KEY = "@local_events";
+
 export default function MainTabScreen() {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(toDateId(new Date()));
   const [events, setEvents] = useState<{ [dateId: string]: Event[] }>({});
-  const handleAddEvent = (newEvent) => {
+  const [deviceEvents, setDeviceEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    const loadDeviceEvents = async () => {
+      const start = new Date();
+      start.setMonth(start.getMonth() - 1);
+      const end = new Date();
+      end.setMonth(end.getMonth() + 3);
+      const fetched = await fetchDeviceEvents(start, end);
+      setDeviceEvents(fetched);
+    };
+    loadDeviceEvents();
+  }, []);
+
+  useEffect(() => {
+    const loadLocalEvents = async () => {
+      try {
+        const json = await AsyncStorage.getItem(STORAGE_KEY);
+        if (json) setEvents(JSON.parse(json));
+      } catch (err) {
+        console.error("Failed to load local events", err);
+      }
+    };
+    loadLocalEvents();
+  }, []);
+
+  useEffect(() => {
+    const saveLocalEvents = async () => {
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+      } catch (err) {
+        console.error("Failed to save local events", err);
+      }
+    };
+    saveLocalEvents();
+  }, [events]);
+
+  useEffect(() => {
+    const merged = [
+      ...(events[selectedDate] || []),
+      ...deviceEvents.filter((e) => e.date === selectedDate),
+    ];
+    setAllEvents(merged);
+  }, [selectedDate, events, deviceEvents]);
+
+  const handleAddEvent = (newEvent: Event) => {
     const targetDate = newEvent.date;
     setEvents((prev) => ({
       ...prev,
@@ -34,6 +87,7 @@ export default function MainTabScreen() {
   };
 
   const handleDeleteEvent = (eventToDelete: Event) => {
+    if (eventToDelete.isDeviceEvent) return;
     setEvents((prev) => {
       const dateId = eventToDelete.date;
       const updatedEvents =
@@ -59,21 +113,29 @@ export default function MainTabScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <View>
-            <BasicCalendar
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-            />
-          </View>
+          <BasicCalendar
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
         </View>
 
-        <View style={[styles.infoSectionUpcoming, {}]}>
+        <View style={[styles.infoSectionUpcoming]}>
           <Text style={styles.sectionTitle}>Upcoming</Text>
           <EventsList
             selectedDate={selectedDate}
-            events={events[selectedDate] || []}
+            events={allEvents}
             onDeleteEvent={handleDeleteEvent}
           />
+        </View>
+
+        <View style={[styles.infoSectionUpcoming]}>
+          {user?.id ? (
+            <CalendarShare currentUserId={user.id} />
+          ) : (
+            <Text style={{ textAlign: "center", color: "#888" }}>
+              No group found
+            </Text>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -81,49 +143,7 @@ export default function MainTabScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 40,
-    padding: 12,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  disabled: {
-    backgroundColor: "#f2f2f2",
-  },
-  button: {
-    backgroundColor: "#3b82f6",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonSecondary: {
-    backgroundColor: "#ef4444",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
+  container: { marginTop: 40, padding: 12 },
   emergencyButton: {
     backgroundColor: "red",
     padding: 20,
@@ -137,16 +157,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 26,
     textAlign: "center",
-  },
-  profileSection: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 10,
-    color: "#ff5f15",
   },
   infoSection: {
     backgroundColor: "white",
@@ -165,64 +175,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
     color: "#ff5f15",
-  },
-  editButton: {
-    backgroundColor: "rgba(218, 144, 55, 1)",
-    padding: 10,
-    borderRadius: 8,
-    alignSelf: "flex-end",
-    marginTop: 20,
-  },
-  editText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 10,
-  },
-  gridUpcoming: {
-    flexDirection: "column",
-    justifyContent: "space-evenly",
-  },
-  descriptorBox: {
-    backgroundColor: "transparent",
-    borderColor: "#f89f2bff",
-    borderWidth: 2,
-    padding: 10,
-    borderRadius: 4,
-    flexBasis: 300,
-    marginBottom: 5,
-  },
-  descriptorBoxUpcoming: {
-    backgroundColor: "#f7c6afc4",
-    padding: 17,
-    borderRadius: 20,
-    width: "100%",
-    marginBottom: 5,
-  },
-  descrLabel: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
-  },
-  descrLabelUpcoming: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
-  },
-  value: {
-    fontSize: 18,
-    color: "#555",
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
   },
 });
