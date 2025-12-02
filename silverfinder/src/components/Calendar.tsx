@@ -39,7 +39,7 @@ const linearTheme: CalendarTheme = {
       },
       content: { color: isPressed ? "#fdbb65ff" : "#6589ff" },
     }),
-    active: ({ isEndOfRange, isStartOfRange }) => ({
+    active: ({ isStartOfRange, isEndOfRange }) => ({
       container: {
         backgroundColor: linearAccent,
         borderTopLeftRadius: isStartOfRange ? 4 : 0,
@@ -52,13 +52,7 @@ const linearTheme: CalendarTheme = {
   },
 };
 
-export function BasicCalendar({
-  selectedDate,
-  onSelectDate,
-}: {
-  selectedDate: string;
-  onSelectDate: (dateId: string) => void;
-}) {
+export function BasicCalendar({ selectedDate, onSelectDate, eventDates = {} }) {
   const today = new Date();
   const selected = parseISO(selectedDate);
   const [currentMonth, setCurrentMonth] = useState(selected);
@@ -67,16 +61,16 @@ export function BasicCalendar({
     setCurrentMonth(selected);
   }, [selectedDate]);
 
-  const changeMonth = (delta: number) => {
-    const targetMonth =
+  const changeMonth = (delta) => {
+    const target =
       delta > 0
         ? addMonths(currentMonth, delta)
         : subMonths(currentMonth, -delta);
-    const lastDay = lastDayOfMonth(targetMonth).getDate();
-    const dayToKeep = Math.min(selected.getDate(), lastDay);
-    setCurrentMonth(
-      new Date(targetMonth.getFullYear(), targetMonth.getMonth(), dayToKeep)
-    );
+
+    const lastDay = lastDayOfMonth(target).getDate();
+    const keepDay = Math.min(selected.getDate(), lastDay);
+
+    setCurrentMonth(new Date(target.getFullYear(), target.getMonth(), keepDay));
   };
 
   const goToToday = () => {
@@ -86,6 +80,7 @@ export function BasicCalendar({
 
   return (
     <View>
+      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.monthText}>
           {format(currentMonth, "MMMM yyyy")}
@@ -95,12 +90,14 @@ export function BasicCalendar({
           <TouchableOpacity onPress={goToToday} style={styles.arrowButton}>
             <Text style={styles.arrowText}>Today</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => changeMonth(-1)}
             style={styles.arrowButton}
           >
             <Text style={styles.arrowText}>{"<"}</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => changeMonth(1)}
             style={styles.arrowButton}
@@ -110,6 +107,7 @@ export function BasicCalendar({
         </View>
       </View>
 
+      {/* FLASH CALENDAR */}
       <Calendar
         calendarActiveDateRanges={[
           { startId: selectedDate, endId: selectedDate },
@@ -126,15 +124,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 10,
+    alignItems: "center",
   },
   arrowsContainer: {
     flexDirection: "row",
     gap: 5,
   },
   arrowButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: linearAccent,
     borderRadius: 6,
