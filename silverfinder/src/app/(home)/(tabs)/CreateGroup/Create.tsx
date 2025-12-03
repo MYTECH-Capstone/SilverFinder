@@ -125,4 +125,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#ffa726' },
 });
-
