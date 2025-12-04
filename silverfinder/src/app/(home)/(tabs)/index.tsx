@@ -5,10 +5,10 @@
 import React, {useState, useEffect} from 'react';
 import {View, StyleSheet} from 'react-native';
 import LocationPermissionRequest from '../../../components/LocationPermissionRequest';
-import LocationDisplay from '../../../components/LocationDisplay';
+import Map from '../../../components/Map';
 import * as Location from 'expo-location';
 
-export default function MainTabScreen() {
+export default function LocationScreen() {
   const [hasPermission, setHasPermission] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
@@ -40,14 +40,12 @@ export default function MainTabScreen() {
 
   return (
     <View style={styles.container}>
-      <LocationDisplay />
-    </View>
+  </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
 });
