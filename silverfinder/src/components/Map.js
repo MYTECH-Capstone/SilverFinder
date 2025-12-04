@@ -112,84 +112,100 @@ export default function LocationMap(){
             >
                 {location && (
                     <>
-                    {}
-                    <Marker
-                        coordinate= {{
+                    {location.accuracy && location.accuracy < 100 && (
+                    <Circle
+                        center= {{
                             latitude: location.latitude,
                             longitude: location.longitude,
                         }}
-                        title = "You're here"
-                        description= {'Accuracy: +${location.accuracy?.toFixed(0) || 'N/A'}m'}
-                        pinColor = "#4CAF50"
+                        radius = {location.accuracy}
+                        fillColor = "rgba(66, 133, 244, 0.15)"
+                        strokeColor = "rgba(66, 133, 244, 0.4)"
+                        strokeWidth={1}
                         />
+                    )}
                         
-                        {}
-                        {location.accuracy && (
-                            <Circle
-                                center= {{
-                                    latitude: location.latitude,
-                                    longitude: location.longitude,
-                                }}
+                    <Marker
+                        coordinate={{
+                            latitude: location.latitude,
+                            longitude: location.longitude,
+                        }}
 
-                                radius = {location.accuracy}
-                                fillColor = "rgba(76, 175, 80, 0.1)"
-                                strokeColor = "rgba(76, 175, 80, 0.3)"
-                                strokeWidth={1}
-                                />
+                        anchor = {{x: 0.5, y: 0.5}}
+                        flat = {true}
+                        rotation = {location.heading || 0}
+                        >
+                           <View style={styles.markerContainer}>
+                                <View style={styles.markerPulse} />
+                                <View style={styles.markerDot}>
+                                    {location.heading && (
+                                        <View style={styles.markerArrow} />
+                                    )}
+                                </View>
+                            </View> 
+                        </Marker>
+                    </>
                 )}
-                </>
+            </MapView>
 
-
-    )}
-    </MapView>
-
-    {location && (
-        <View style={styles.infoOverlay}>
-          <View style={styles.infoCard}>
-            <Text style={styles.coordText}>
-              📍 {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-            </Text>
-            <Text style={styles.accuracyText}>
-              Accuracy: ±{location.accuracy?.toFixed(0) || 'N/A'}m
-            </Text>
-            {location.speed && location.speed > 0 && (
-              <Text style={styles.speedText}>
-                🚗 Speed: {(location.speed * 3.6).toFixed(1)} km/h
-              </Text>
-            )}
-          </View>
-        </View>
-      )}
-
-      <View style = {styles.controlsContainer}>
-        <TouchableOpacity
-            style = {[
-                styles.recenterButton,
-                followUser && styles.recenterButtonActive,
-            ]}
-            onPress = {handleRecenterPress}
-            >
-                <Text style = {styles.recenterButtonText}>
-                    {followUser ? '📍' : '🎯'}
-                </Text>
-            </TouchableOpacity>
-
-            {followUser && (
-                <View style={styles.followIndicator}>
-                    <View style={styles.followDot} />
-                    <Text style={styles.followText}>Following</Text>
-                </View>
-            )}
-        </View>
-        {isLoading && !location && (
-            <View style={styles.loadingOverlay}>
-                <View style={styles.loadingCard}>
-                    <Text style={styles.loadingText}>Getting your location...</Text>
+//location status
+            <View style={styles.topOverlay}>
+                <View style={styles.statusCard}>
+                    <View style = {styles.statusRow}>
+                        <View style = {styles.statusDot}/>
+                        <Text style = {styles.statusText}>
+                            {location ? 'Live Location' : 'Searching...'}
+                        </Text>
+                    </View>
+                    {location && location.accuracy &&(
+                        <Text style = {styles.accuracyBadge}>
+                            +{location.accuracy.toFixed(0)}m
+                        </Text>
+                    )}
                 </View>
             </View>
-        )}
-    </View>
-  );
+
+
+            <View style = {styles.bottomControls}>
+                <TouchableOpacity
+                    style={styles.controlButton}
+                    onPress={toggleMapType}
+                >
+                    <Text style={styles.controlButtonText}>🗺️</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        styles.recenterButton,
+                        followUser && styles.recenterButtonActive,
+                    ]}
+                    onPress={handleRecenterPress}
+                >
+                    <Text style={styles.recenterButtonText}>
+                        {followUser ? '📍' : '🎯'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {followUser && location && (
+                <View style={styles.followingBadge}>
+                    <Text style={styles.followingText}>Following Your Location</Text>
+                </View>
+            )}
+
+            {(isLoading || !location) && (
+                <View style={styles.loadingOverlay}>
+                    <View style={styles.loadingCard}>
+                        <ActivityIndicator size="large" color="#4CAF50" />
+                        <Text style={styles.loadingText}>Getting your location...</Text>
+                        <Text style={styles.loadingSubtext}>
+                            Make sure tracking is enabled
+                        </Text>
+                    </View>
+                </View>
+            )}
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
