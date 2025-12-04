@@ -4,7 +4,7 @@
 import React, {useState} from "react";
 import {View, Text, StyleSheet} from 'react-native';
 import LocationPermissionRequest from './components/LocationPermissionRequest';
-import LocationDisplay from "./components/LocationDisplay";
+import Map from "./components/Map";
 
 export default function App(){
     const [hasPermission, setHasPermission] = useState(false);
@@ -16,8 +16,8 @@ export default function App(){
     }
 
     return(
-        <View style = {StyleSheet.container}>
-            <LocationDisplay />
+        <View style = {styles.container}>
+            <Map />
         </View>
     );
 }
@@ -25,7 +25,6 @@ export default function App(){
 const styles = StyleSheet.create({
     container:{
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
 });
 
