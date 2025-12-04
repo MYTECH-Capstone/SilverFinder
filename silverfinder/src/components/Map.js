@@ -3,12 +3,13 @@
 
 import React, {use, useEffect, useRef, useState} from 'react';
 import {View, Stylesheet, TouchableOpacity, Text, Alert, LayoutAnimation} from 'react-native';
-import MapView, {Maker, Circle, Marker} from 'react-native-maps';
-import useLocation from '';
+import MapView, {Circle, Marker, PROVIDER_GOOGLE} from 'react-native-maps';
+import useLocation from '../hooks/useLocation';
 
 export default function LocationMap(){
     const{
-        location, 
+        location,
+        error, 
         isLoading,
         startWatchingLocation,
         stopWatchingLocation,
@@ -16,6 +17,7 @@ export default function LocationMap(){
 
     const [followUser, setFollowUser] = useState(true);
     const [mapReady, setMapReady] = useState(false);
+    const [mapType, setMapType] = useState('standard');
     const mapRef = useRef(null);
 
     useEffect(() => {
@@ -25,33 +27,41 @@ export default function LocationMap(){
         };
     },[]);
 
+    //create follow mode?
     useEffect(() => {
         if(location && mapRef.current && followUser && mapReady){
-            mapRef.current.animateToRegion({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            }, 1000);
+            mapRef.current.animateCamera({
+                center:{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                },
+                zoom: 16,
+            }, {duration: 1000});
         }
     }, [location, followUser, mapReady]);
 
     const handleRecenterPress = () => {
         if(location && mapRef.current){
             setFollowUser(true);
-            mapRef.current.animateToRegion({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            }, 500);
-        } else{
-            Alert.alert('Location is not avaliable', 'Waiting for location data...');
+            mapRef.current.animateCamera({
+                center: {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                },
+                zoom: 16,
+            }, {duration: 500});
         }
     };
 
     const handleMapPress = () =>{
         setFollowUser(false);
+    };
+
+    const toggleMapType = () => {
+        const types = ['standard', 'satellite', 'hybrid'];
+        const currentIndex = types.indexOf(mapType);
+        const nextIndex = (currentIndex + 1) % types.length;
+        setMapType(types[nextIndex]);
     };
 
     if(error){
@@ -60,6 +70,9 @@ export default function LocationMap(){
                 <Text style={styles.errorIcon}>⚠️</Text>
                 <Text style={styles.errorText}>Unable to load map</Text>
                 <Text style={styles.errorSubtext}>{error}</Text>
+                <Text style={styles.errorHint}>
+                    Please enable location services in your device settings
+                </Text>
             </View>
         );
     }
@@ -85,13 +98,17 @@ export default function LocationMap(){
                 ref={mapRef}
                 style={styles.map}
                 initialRegion={initialRegion}
-                showsUserLocation={true}
+                mapType={mapType}
+                showsUserLocation={false}
                 showsMyLocationButton={false}
                 showsCompass={true}
-                showsScale={true}
+                showsScale={false}
+                showsTraffic={false}
                 onPress={handleMapPress}
                 onPanDrag={handleMapPress}
                 onMapReady={() => setMapReady(true)}
+                rotateEnabled={true}
+                pitchEnabled={false}            
             >
                 {location && (
                     <>
@@ -330,7 +347,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  
+
   loadingText: {
     fontSize: 16,
     color: '#333',
