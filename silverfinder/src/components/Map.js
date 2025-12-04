@@ -223,149 +223,227 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#f5f5f5',
-        padding: 20,
+        padding: 30,
     },
 
     errorIcon:{
-        fontSize: 60,
-        marginBottom: 15,
+        fontSize: 70,
+        marginBottom: 20,
     },
 
     errorText:{
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
         color: '#f44336',
         marginBottom: 10,
+        textAlign: 'center',
     },
 
     errorSubtext:{
-        fontSize: 14,
+        fontSize: 15,
         color: '#699',
-        TextAlign: 'center',
+        textAlign: 'center',
+        marginBottom: 15,
     },
 
-    infoOverlay:{
+    errorHint:{
+        fontSize: 13,
+        color: '#999',
+        textAlign: 'center',
+        fontStyle: 'italic',
+    },
+
+    markerContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+  },
+
+    markerPulse: {
         position: 'absolute',
-        top: 50, 
-        left: 10,
-        right: 10,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(66, 133, 244, 0.2)',
+        borderWidth: 2,
+        borderColor: 'rgba(66, 133, 244, 0.4)',
+    },
+
+    markerDot: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#4285F4',
+        borderWidth: 3,
+        borderColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 5,
+    },
+
+    markerArrow: {
+        width: 0,
+        height: 0,
+        backgroundColor: 'transparent',
+        borderStyle: 'solid',
+        borderLeftWidth: 4,
+        borderRightWidth: 4,
+        borderBottomWidth: 8,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderBottomColor: 'white',
+        transform: [{ rotate: '180deg' }],
+    },
+
+    topOverlay: {
+        position: 'absolute',
+        top: 60,
+        left: 0,
+        right: 0,
         alignItems: 'center',
     },
 
-    infoCard:{
+    statusCard: {
         backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 12,
+        borderRadius: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
         elevation: 5,
-        maxWidth: '90%',
     },
 
-    coordText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    fontFamily: 'monospace',
-    marginBottom: 4,
-  },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 12,
+    },
 
-  accuracyText: {
-    fontSize: 12,
-    color: '#699',
-  },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#4CAF50',
+        marginRight: 8,
+    },
 
-  speedText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-    marginTop: 4,
-  },
+    statusText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
 
-  controlsContainer: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    alignItems: 'flex-end',
-  },
+    accuracyBadge: {
+        fontSize: 12,
+        color: '#666',
+        backgroundColor: '#f0f0f0',
+        paddingVertical: 3,
+        paddingHorizontal: 8,
+        borderRadius: 10,
+    },
 
-  recenterButton: {
-    backgroundColor: 'white',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
+    bottomControls: {
+        position: 'absolute',
+        bottom: 40,
+        right: 20,
+        flexDirection: 'column',
+        gap: 12,
+    },
 
-  recenterButtonActive: {
-    backgroundColor: '#4CAF50',
-  },
+    controlButton: {
+        backgroundColor: 'white',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
 
-  recenterButtonText: {
-    fontSize: 24,
-  },
+    controlButtonText: {
+        fontSize: 22,
+    },
 
-  followIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
-  },
+    recenterButton: {
+        backgroundColor: 'white',
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
 
-  followDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-    marginRight: 6,
-  },
+    recenterButtonActive: {
+        backgroundColor: '#4CAF50',
+    },
 
-  followText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
+    recenterButtonText: {
+        fontSize: 28,
+     },
 
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
+    followingBadge: {
+        position: 'absolute',
+        bottom: 110,
+        alignSelf: 'center',
+        backgroundColor: 'rgba(76, 175, 80, 0.95)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
+    },
 
-  loadingCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
+    followingText: {
+        color: 'white',
+        fontSize: 13,
+        fontWeight: '600',
+    },
 
-  loadingText: {
-    fontSize: 16,
-    color: '#333',
-  },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    },
+
+    loadingCard: {
+        alignItems: 'center',
+        padding: 30,
+    },
+
+    loadingText: {
+        fontSize: 18,
+        color: '#333',
+        fontWeight: '600',
+        marginTop: 15,
+    },
+
+    loadingSubtext: {
+        fontSize: 14, 
+        color: '#699',
+        marginTop: 8,
+    },
 });
