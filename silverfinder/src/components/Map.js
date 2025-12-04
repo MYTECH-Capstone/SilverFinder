@@ -50,9 +50,38 @@ export default function LocationMap(){
         }
     };
 
-    const handleMapPress = () =>{}
+    const handleMapPress = () =>{
+        setFollowUser(false);
+    };
+
+    if(error){
+        return(
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
+                <Text style={styles.errorText}>Unable to load map</Text>
+                <Text style={styles.errorSubtext}>{error}</Text>
+            </View>
+        );
+    }
 
     const initialRegion = location
+    ?{
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    }
+    :{
+        //default Denton, TX
+        latitude: 33.2148,
+        longitude: -97.1331,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+    };
+
+    return(
+
+    )
 
     
 
