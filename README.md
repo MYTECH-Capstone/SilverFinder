@@ -6,7 +6,7 @@ The growing use of technology among the older demographic of users is transformi
 Although there are applications and services like Life360 and silver alerts that help with finding loved ones, our application provides a robust, multifunctional, and secure platform that combines these functionalities. Silver Finder aims to provide a user-friendly digital solution that allows families and care takers the ability to not only track their seniors location, but also notify communities, contact law enforcement, and release auto generated missing posters at the push of a button. Thus, facilitating easy identification in the case of an emergency. 
 
 
-Directions to launch
+Directions to launch 🗺️
 1. git clone "repo link"
 2. cd into folder
 3. run "npm install"
