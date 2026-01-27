@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
+import AntDesign from '@expo/vector-icons/AntDesign';
+
 
 export default function GroupPage() {
   const { groupId } = useLocalSearchParams();
@@ -83,6 +85,24 @@ export default function GroupPage() {
   }
 
   return (
+<>
+      {/* HEADER BUTTON ONLY — does not affect layout */}
+      <Stack.Screen
+  options={{
+    title: group?.group_name ?? 'Group',
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => router.push('/(home)/(tabs)/CreateGroup/Chat')}
+        style={{ marginRight: 12 }}
+      >
+        <AntDesign name="message" size={24} color="black" />
+      </TouchableOpacity>
+    ),
+  }}
+/>
+
+
+
     <View style={styles.container}>
       <Text style={styles.title}>{group?.group_name}</Text>
       <Text style={styles.subtitle}>Members:</Text>
@@ -105,6 +125,7 @@ export default function GroupPage() {
       </TouchableOpacity>
     
     </View>
+    </>
   );
 }
 
