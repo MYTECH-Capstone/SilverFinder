@@ -92,7 +92,10 @@ export default function GroupPage() {
     title: group?.group_name ?? 'Group',
     headerRight: () => (
       <TouchableOpacity
-        onPress={() => router.push('/(home)/(tabs)/CreateGroup/Chat')}
+      onPress={() => router.push({
+        pathname: '/(home)/(tabs)/CreateGroup/Chat',
+        params: { groupId: group.id, groupName: group.group_name }
+      })}
         style={{ marginRight: 12 }}
       >
         <AntDesign name="message" size={24} color="black" />
