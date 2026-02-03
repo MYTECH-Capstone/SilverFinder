@@ -6,6 +6,218 @@ import { chatClient } from '../../../../../lib/stream';
 import { supabase } from '../../../../../lib/supabase';
 import { useAuth } from '../../../../../providers/AuthProvider';
 
+// get project id because need full url for image (in the avatar bucket)
+const STORAGE_URL = 'https://asumodefruhhookvforw.supabase.co/storage/v1/object/public/avatars/';
+
+export default function ChatScreen() {
+  const { groupId, groupName } = useLocalSearchParams();
+  const { user } = useAuth();
+  const [connected, setConnected] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<any>(null);
+
+  useEffect(() => {
+    const connect = async () => {
+      if (!user || !groupId) return;
+      
+      try {
+        // Fetch Token
+        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('stream-token');
+        if (tokenError || !tokenData?.token) throw new Error("Could not fetch token");
+
+        // Fetch Profile from Supabase - username actually contains their name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        // Construct valid Image URL - stream needs full path
+        const avatarUrl = profile?.avatar_url 
+          ? `${STORAGE_URL}${profile.avatar_url}` 
+          : undefined;
+
+        // Manage Connection - make sure to disconnect user when switch profiles/accounts
+        if (chatClient.userID && chatClient.userID !== user.id) {
+          await chatClient.disconnectUser();
+        }
+        
+        if (!chatClient.userID) {
+          await chatClient.connectUser(
+            { 
+              id: user.id, 
+              name: profile?.username || user.email?.split('@')[0], 
+              image: avatarUrl,
+            }, 
+            tokenData.token
+          );
+        }
+
+        // Upset user add user in db
+        await chatClient.upsertUser({
+          id: user.id,
+          name: profile?.username || user.email?.split('@')[0],
+          image: avatarUrl,
+        });
+        
+        // Initialize Channel
+        const channelInstance = chatClient.channel('livestream', groupId as string, {
+          name: groupName as string,
+        });
+
+        await channelInstance.watch();
+        
+        setActiveChannel(channelInstance);
+        setConnected(true);
+      } catch (err: any) {
+        console.error("Chat Setup Error:", err.message);
+      }
+    };
+
+    connect();
+
+    return () => {
+      setConnected(false);
+      setActiveChannel(null);
+    };
+  }, [groupId, user?.id]);
+
+  if (!connected || !activeChannel) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  return (
+    <OverlayProvider>
+      <Chat client={chatClient}>
+        <Channel channel={activeChannel}>
+          <View style={{ flex: 1, backgroundColor: 'white' }}>
+            <MessageList 
+              />
+            <MessageInput />
+          </View>
+        </Channel>
+      </Chat>
+    </OverlayProvider>
+  );
+}
+
+
+/*
+//this is 8:35
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-expo';
+import { chatClient } from '../../../../../lib/stream';
+import { supabase } from '../../../../../lib/supabase';
+import { useAuth } from '../../../../../providers/AuthProvider';
+
+export default function ChatScreen() {
+  const { groupId, groupName } = useLocalSearchParams();
+  const { user } = useAuth();
+  const [connected, setConnected] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<any>(null);
+
+  useEffect(() => {
+    const connect = async () => {
+      // Basic safety checks
+      if (!user || !groupId) return;
+      
+      try {
+        // 1. Fetch Token from Edge Function
+        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('stream-token');
+        if (tokenError || !tokenData?.token) throw new Error("Could not fetch token");
+
+        // 2. Fetch User Profile from Supabase
+        // We fetch 'username' because that contains their actual name
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.warn("Could not fetch profile, using email as fallback:", profileError.message);
+        }
+
+        // 3. Manage Connection & Identity
+        // If a different user is logged in locally, disconnect them first
+        if (chatClient.userID && chatClient.userID !== user.id) {
+          await chatClient.disconnectUser();
+        }
+        
+        // Connect user with their Name and Avatar
+        if (!chatClient.userID) {
+          await chatClient.connectUser(
+            { 
+              id: user.id, 
+              name: profile?.username || user.email?.split('@')[0] || 'Unknown User', 
+              image: profile?.avatar_url || undefined,
+            }, 
+            tokenData.token
+          );
+        }
+        
+        // 4. Initialize and Watch the Channel
+        // We keep 'livestream' to ensure your team bypasses Error 17 immediately
+        const channelInstance = chatClient.channel('livestream', groupId as string, {
+          name: groupName as string,
+        });
+
+        await channelInstance.watch();
+        
+        setActiveChannel(channelInstance);
+        setConnected(true);
+      } catch (err: any) {
+        console.error("Chat Setup Error:", err.message);
+      }
+    };
+
+    connect();
+
+    // Reset state when leaving the screen
+    return () => {
+      setConnected(false);
+      setActiveChannel(null);
+      // Optional: disconnectUser() if you want to be strict, 
+      // but usually better to stay connected while app is open.
+    };
+  }, [groupId, user?.id]);
+
+  if (!connected || !activeChannel) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  return (
+    <OverlayProvider>
+      <Chat client={chatClient}>
+        <Channel channel={activeChannel}>
+          <View style={{ flex: 1, backgroundColor: 'white' }}>
+            <MessageList />
+            <MessageInput />
+          </View>
+        </Channel>
+      </Chat>
+    </OverlayProvider>
+  );
+}
+/*
+// most recent feb 3 version
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-expo';
+import { chatClient } from '../../../../../lib/stream';
+import { supabase } from '../../../../../lib/supabase';
+import { useAuth } from '../../../../../providers/AuthProvider';
+
 export default function ChatScreen() {
   const { groupId, groupName } = useLocalSearchParams();
   const { user } = useAuth();
@@ -69,7 +281,7 @@ export default function ChatScreen() {
   return (
     <OverlayProvider>
       <Chat client={chatClient}>
-        {/* Pass the specific channel instance from state here */}
+        {/* Pass the specific channel instance from state here *//*}
         <Channel channel={activeChannel}>
           <View style={{ flex: 1, backgroundColor: 'white' }}>
             <MessageList />
@@ -80,7 +292,7 @@ export default function ChatScreen() {
     </OverlayProvider>
   );
 }
-
+*/
 /*import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -241,76 +453,5 @@ export default function ChatScreen() {
     </OverlayProvider>
   );
 }
-/*import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-expo';
-import { chatClient } from '../../../../../lib/stream';
-import { supabase } from '../../../../../lib/supabase';
-import { useAuth } from '../../../../../providers/AuthProvider';
-
-export default function ChatScreen() {
-  const { groupId, groupName } = useLocalSearchParams();
-  const { user } = useAuth();
-  const [connected, setConnected] = useState(false);
-
-  useEffect(() => {
-    const connect = async () => {
-      if (!user) return;
-      
-      // fetch token from Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('stream-token');
-      // Check if data is null or if there is an error
-     
-
-      if (error) {
-        // debug: parse the actual JSON error message sent by the Edge Function catch block
-        try {
-          const errorBody = await error.context.json();
-          console.error('DETAILED SERVER ERROR:', errorBody);
-        } catch (e) {
-          console.error('Token generation failed:', error.message);
-        }
-        return; 
-      }
-      // connect user and use token
-      await chatClient.connectUser({ id: user.id }, data.token);
-      
-      // set up Channel, generate at bottom
-      const channel = chatClient.channel('messaging', groupId as string, {
-        name: groupName as string,
-      });
-      await channel.watch();
-      setConnected(true);
-    };
-
-    connect();
-    
-    
-    return () => { chatClient.disconnectUser(); };
-    }, [groupId]);
-
-  if (!connected) return <ActivityIndicator style={{ flex: 1 }} />;
-
-  const channel = chatClient.channel('messaging', groupId as string);
-
-  return (
-    <OverlayProvider>
-      <Chat client={chatClient}>
-        <Channel channel={channel}>
-          <View style={{ flex: 1, backgroundColor: 'white' }}>
-            <MessageList />
-            <MessageInput />
-          </View>
-        </Channel>
-      </Chat>
-    </OverlayProvider>
-  );
-}
-/*import { Text } from 'react-native';
-
-export default function MainTabScreen() {
-  return (
-    <Text>Chat screen</Text>
-  );
+/*
 }*/
