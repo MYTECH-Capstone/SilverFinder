@@ -68,7 +68,7 @@ export default function LocationMap(){
         return(
             <View style={styles.errorContainer}>
                 <Text style={styles.errorIcon}>⚠️</Text>
-                <Text style={styles.errorText}>Unable to load map</Text>
+                <Text style={styles.errorText}>Currently unable to load map</Text>
                 <Text style={styles.errorSubtext}>{error}</Text>
                 <Text style={styles.errorHint}>
                     Please enable location services in your device settings
