@@ -37,6 +37,7 @@ export default function TabsNavigator() {
       <Tabs.Screen
         name="CreateGroup"
         options={{
+          headerShown: false,
           title: "Groups",
           tabBarIcon: () => <Ionicons name="people" size={24} color="black" />,
         }}
