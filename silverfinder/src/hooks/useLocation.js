@@ -1,112 +1,70 @@
 //Created 11/18/2025 - Rachel Townsend
 //Don't forget to install expo-location "npx expo install expo-location"
 
-import {useState, useEffect, useRef} from 'react';
-import * as Location from 'expo-location';
-//import { LocationSubscriber } from 'expo-location/build/LocationSubscribers';
+import { useEffect, useRef, useState, useCallback } from "react";
+import * as Location from "expo-location";
 
-export default function useLocation(){
-    const [location, setLocation] = useState(null);
-    const [error, setError] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const locationSubscription = useRef(null);
-    
-    const getCurrentLocation = async () => {
-    try{
-        setIsLoading(true);
-        setError(null);
+export function useLocation() {
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [coords, setCoords] = useState(null); // { latitude, longitude, accuracy, heading }
+  const [error, setError] = useState(null);
+  const subRef = useRef(null);
 
-        const {status} = await Location.getForegroundPermissionsAsync();
-        if(status !== 'granted'){
-            setError('Location permission not granted');
-            setIsLoading(false);
-            return null;
-        }
-    
-        const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
+  const stop = useCallback(() => {
+    try {
+      subRef.current?.remove?.();
+    } catch (e) {
+      //ignore
+    }
+    subRef.current = null;
+  }, []);
+
+  const start = useCallback(async () => {
+    setError(null);
+
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    const ok = status === "granted";
+    setPermissionGranted(ok);
+
+    if (!ok) {
+      setError("Location permission not granted.");
+      return;
+    }
+
+    //Ensure we have at least one fix before map tries to center
+    const first = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+
+    setCoords({
+      latitude: first.coords.latitude,
+      longitude: first.coords.longitude,
+      accuracy: first.coords.accuracy,
+      heading: first.coords.heading,
+    });
+
+    stop();
+    subRef.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 1500,
+        distanceInterval: 2,
+      },
+      (pos) => {
+        setCoords({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          heading: pos.coords.heading,
         });
+      }
+    );
+  }, [stop]);
 
-        const locationData = {
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
-            accuracy: currentLocation.coords.accuracy,
-            heading: currentLocation.coords.heading,
-            speed: currentLocation.coords.speed,
-            timestamp: currentLocation.coords.timestamp,
-        };
+  useEffect(() => {
+    start();
+    return () => stop();
+  }, [start, stop]);
 
-        setLocation(locationData);
-        setIsLoading(false);
-    
-        return locationData;
-        } 
-        catch(err){
-            console.error('ERROR getting your current location:', err);
-            setError(err.message);
-            setIsLoading(false);
-            return null;
-        }
-};
-
-//Regular updates
-const startWatchingLocation = async () => {
-    try{
-        setError(null);
-
-        const {status} = await Location.getForegroundPermissionsAsync();
-        if(status !== 'granted'){
-            setError('Location permission not granted');
-            return;
-        }
-        if(locationSubscription.current){
-            locationSubscription.current.remove();
-        }
-
-        locationSubscription.current = await Location.watchPositionAsync(
-            {
-                accuracy: Location.Accuracy.High,
-                timeInterval: 10000, //10 seconds?
-                distanceInterval: 10, //change later potentially
-            },
-            (newLocation) => {
-                const locationData = {
-                    latitude: newLocation.coords.latitude,
-                    longitude: newLocation.coords.longitude,
-                    accuracy: newLocation.coords.accuracy,
-                    altitude: newLocation.coords.altitude,
-                    heading: newLocation.coords.heading,
-                    speed: newLocation.coords.speed,
-                    timestamp: newLocation.coords.timestamp,
-                };
-
-                setLocation(locationData);
-                setIsLoading(false);
-            }
-        );
-    }
-    catch(err){
-        console.error('Error watching location:', err);
-        setError(err.message);
-        setIsLoading(false);
-    }
-};
-
-const stopWatchingLocation = () => {
-    if(locationSubscription.current){
-        locationSubscription.current.remove();
-        locationSubscription.current = null;
-    }
-};
-
-useEffect(() => {
-    getCurrentLocation(); //get initial location immediately
-    return () => {
-        stopWatchingLocation();
-    };
-}, []);
-
-return{
-    location, error, isLoading, getCurrentLocation, startWatchingLocation, stopWatchingLocation,
-};
+  return { coords, permissionGranted, error, start, stop };
 }
