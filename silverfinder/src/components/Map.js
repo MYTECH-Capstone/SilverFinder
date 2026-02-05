@@ -1,10 +1,12 @@
 //This is the map component 
 //Created by Rachel Townsend
 
-import React, {use, useEffect, useRef, useState} from 'react';
-import {View, Stylesheet, TouchableOpacity, Text, Alert, LayoutAnimation} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {View, StyleSheet, TouchableOpacity, Text, Alert, ActivityIndicator} from 'react-native';
 import MapView, {Circle, Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 import useLocation from '../hooks/useLocation';
+
+console.log("Map is rendering"); //diagnostic
 
 export default function LocationMap(){
     const{
@@ -21,8 +23,10 @@ export default function LocationMap(){
     const mapRef = useRef(null);
 
     useEffect(() => {
+        console.log("Starting location watch...");
         startWatchingLocation();
         return () => {
+            console.log("Stopping location watch...");
             stopWatchingLocation();
         };
     },[]);

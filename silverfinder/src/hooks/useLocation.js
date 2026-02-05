@@ -100,6 +100,7 @@ const stopWatchingLocation = () => {
 };
 
 useEffect(() => {
+    getCurrentLocation(); //get initial location immediately
     return () => {
         stopWatchingLocation();
     };
