@@ -34,24 +34,23 @@
         "FOREGROUND_SERVICE_LOCATION"
       ],
       "config": {
-        "googleMaps":{
+        "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-    [
-      "expo-location",
+      [
+        "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Silver Finder to use your location so your caretakers can see where you are and keep you safe.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Silver Finder to use your location so your caretaker(s) can see where you are and keep you safe.",
           "locationAlwaysPermission": "Allow Silver Finder to use your location even when the app is closed so your caretakers can always find you.",
           "locationWhenInUsePermission": "Allow Silver Finder to use your location while using the app.",
           "isAndroidBackgroundLocationEnabled": true,
@@ -63,4 +62,4 @@
       "typedRoutes": true
     }
   }
-}    
+}
