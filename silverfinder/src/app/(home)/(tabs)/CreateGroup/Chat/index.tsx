@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-expo';
 import { chatClient } from '../../../../../lib/stream';
 import { supabase } from '../../../../../lib/supabase';
@@ -91,6 +91,14 @@ export default function ChatScreen() {
 
   return (
     <OverlayProvider>
+      <Stack.Screen 
+        options={{ 
+          title: (groupName as string) || 'Chat',
+          headerBackTitle: 'Back', }}
+          />
+
+
+
       <Chat client={chatClient}>
         <Channel channel={activeChannel}>
           <View style={{ flex: 1, backgroundColor: 'white' }}>
