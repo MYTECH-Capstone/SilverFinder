@@ -1,13 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-expo';
-import { chatClient } from '../../../../../lib/stream';
-import { supabase } from '../../../../../lib/supabase';
-import { useAuth } from '../../../../../providers/AuthProvider';
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { useLocalSearchParams, Stack } from "expo-router";
+import {
+  Chat,
+  Channel,
+  MessageList,
+  MessageInput,
+  OverlayProvider,
+} from "stream-chat-expo";
+import { chatClient } from "../../../../../lib/stream";
+import { supabase } from "../../../../../lib/supabase";
+import { useAuth } from "../../../../../providers/AuthProvider";
 
 // get project id because need full url for image (in the avatar bucket)
-const STORAGE_URL = 'https://asumodefruhhookvforw.supabase.co/storage/v1/object/public/avatars/';
+const STORAGE_URL =
+  "https://asumodefruhhookvforw.supabase.co/storage/v1/object/public/avatars/";
 
 export default function ChatScreen() {
   const { groupId, groupName } = useLocalSearchParams();
@@ -18,54 +25,59 @@ export default function ChatScreen() {
   useEffect(() => {
     const connect = async () => {
       if (!user || !groupId) return;
-      
       try {
         // Fetch Token
-        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('stream-token');
-        if (tokenError || !tokenData?.token) throw new Error("Could not fetch token");
+        const { data: tokenData, error: tokenError } =
+          await supabase.functions.invoke("stream-token");
+        if (tokenError || !tokenData?.token)
+          throw new Error("Could not fetch token");
 
         // Fetch Profile from Supabase - username actually contains their name
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("id", user.id)
           .single();
 
         // Construct valid Image URL - stream needs full path
-        const avatarUrl = profile?.avatar_url 
-          ? `${STORAGE_URL}${profile.avatar_url}` 
+        const avatarUrl = profile?.avatar_url
+          ? `${STORAGE_URL}${profile.avatar_url}`
           : undefined;
 
         // Manage Connection - make sure to disconnect user when switch profiles/accounts
         if (chatClient.userID && chatClient.userID !== user.id) {
           await chatClient.disconnectUser();
         }
-        
+
         if (!chatClient.userID) {
           await chatClient.connectUser(
-            { 
-              id: user.id, 
-              name: profile?.username || user.email?.split('@')[0], 
+            {
+              id: user.id,
+              name: profile?.username || user.email?.split("@")[0],
               image: avatarUrl,
-            }, 
-            tokenData.token
+            },
+            tokenData.token,
           );
         }
 
         // Upset user add user in db
         await chatClient.upsertUser({
           id: user.id,
-          name: profile?.username || user.email?.split('@')[0],
+          name: profile?.username || user.email?.split("@")[0],
           image: avatarUrl,
         });
-        
+
         // Initialize Channel
-        const channelInstance = chatClient.channel('livestream', groupId as string, {
-          name: groupName as string,
-        });
+        const channelInstance = chatClient.channel(
+          "livestream",
+          groupId as string,
+          {
+            name: groupName as string,
+          },
+        );
 
         await channelInstance.watch();
-        
+
         setActiveChannel(channelInstance);
         setConnected(true);
       } catch (err: any) {
@@ -83,7 +95,7 @@ export default function ChatScreen() {
 
   if (!connected || !activeChannel) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
@@ -91,19 +103,17 @@ export default function ChatScreen() {
 
   return (
     <OverlayProvider>
-      <Stack.Screen 
-        options={{ 
-          title: (groupName as string) || 'Chat',
-          headerBackTitle: 'Back', }}
-          />
-
-
+      <Stack.Screen
+        options={{
+          title: (groupName as string) || "Chat",
+          headerBackTitle: "Back",
+        }}
+      />
 
       <Chat client={chatClient}>
         <Channel channel={activeChannel}>
-          <View style={{ flex: 1, backgroundColor: 'white' }}>
-            <MessageList 
-              />
+          <View style={{ flex: 1, backgroundColor: "white" }}>
+            <MessageList />
             <MessageInput />
           </View>
         </Channel>
@@ -111,7 +121,6 @@ export default function ChatScreen() {
     </OverlayProvider>
   );
 }
-
 
 /*
 //this is 8:35
@@ -289,7 +298,7 @@ export default function ChatScreen() {
   return (
     <OverlayProvider>
       <Chat client={chatClient}>
-        {/* Pass the specific channel instance from state here *//*}
+        {/* Pass the specific channel instance from state here */ /*}
         <Channel channel={activeChannel}>
           <View style={{ flex: 1, backgroundColor: 'white' }}>
             <MessageList />
