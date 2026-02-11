@@ -350,9 +350,9 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
     borderRadius: 8,
     margin: 10,
-    height: 60,
+    height: 80,
     overflow: 'hidden',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#e6e6e6',
     justifyContent: 'center',
   },
 });
