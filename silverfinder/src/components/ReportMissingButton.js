@@ -1,8 +1,10 @@
 import { useState } from "react";
 import {
   Modal,
+  ScrollView,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
@@ -25,27 +27,50 @@ export default function ReportMissingButton() {
       {/* Popup */}
       <Modal
         animationType="slide"
-        transparent={false}
+        presentationStyle="fullScreen"
         visible={visible}
         onRequestClose={() => setVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <Text style={styles.title}>
-            Report Missing Elder
-          </Text>
+        <ScrollView 
+        contentContainerStyle={styles.modalContainer}
+        keyboardShouldPersistTaps="handled"
+        >
+          
+          <Text style={styles.title}>Report Missing Elder</Text>
 
-          {/* Blank placeholder screen */}
-          <Text style={styles.placeholder}>
-            Placeholder for missing report form fields.
-          </Text>
 
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Elder Name</Text>
+            <TextInput style={styles.input} placeholder="Fake Man" />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Last Known Location</Text>
+            <TextInput style={styles.input} placeholder="123 Main St" />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Date Last Seen</Text>
+            <TextInput style={styles.input} placeholder="MM/DD/YYYY" />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Additional Notes</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Any other relevant information"
+              multiline
+            />
+          </View>
+
+          {/* Buttons */} 
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => setVisible(false)}
           >
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </Modal>
     </>
   );
@@ -67,16 +92,48 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    flexGrow: 1,
     padding: 20,
     backgroundColor: "white",
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#b91c1c",
+  },
+  formGroup: {
+    marginBottom: 15,
+  },
+  label: { 
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#f9f9f9",
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  submitButton: {
+    backgroundColor: "#b91c1c",
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  submitText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+    textAlign: "center",
   },
   placeholder: {
     fontSize: 16,
