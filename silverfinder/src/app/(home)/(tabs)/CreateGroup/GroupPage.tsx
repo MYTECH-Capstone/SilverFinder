@@ -12,6 +12,7 @@ import { router, useLocalSearchParams, Stack } from "expo-router";
 import { supabase } from "../../../../lib/supabase";
 import { useAuth } from "../../../../providers/AuthProvider";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import ReportMissingButton from "../../../../components/ReportMissingButton";
 
 export default function GroupPage() {
   const { groupId } = useLocalSearchParams();
@@ -129,7 +130,9 @@ export default function GroupPage() {
 
       <View style={styles.container}>
         <Text style={styles.title}>{group?.group_name}</Text>
+        <ReportMissingButton />
         <Text style={styles.subtitle}>Members:</Text>
+
         <FlatList
           data={members}
           keyExtractor={(item) => item.user_id}

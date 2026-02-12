@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
 import Avatar from '../../components/Avatar'
 import { Picker } from '@react-native-picker/picker'
+import ReportMissingButton from '../../../components/ReportMissingButton'
 
 
 export default function MyInformationScreen() {
@@ -72,11 +73,8 @@ export default function MyInformationScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#ffd8a8'}}> 
     <ScrollView style={styles.container}>
-      <TouchableOpacity style={styles.emergencyButton}>
-        <Text style={styles.emergencyText}>
-          Press this button if you need immediate help!
-        </Text>
-      </TouchableOpacity>
+
+      <ReportMissingButton />
 
       <View style={styles.profileSection}>
         <TouchableOpacity style={styles.editButton} onPress={() => router.push('/(editinfo)/EditProfile')}>

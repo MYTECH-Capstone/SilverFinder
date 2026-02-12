@@ -14,6 +14,7 @@ import { fetchDeviceEvents } from "../../../components/calService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarShare } from "../../../components/CalendarShare";
 import { useAuth } from "../../../providers/AuthProvider";
+import ReportMissingButton from "../../../components/ReportMissingButton";
 
 type Event = {
   subject: string;
@@ -102,11 +103,8 @@ export default function MainTabScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#ffd8a8" }}>
       <ScrollView style={styles.container}>
-        <TouchableOpacity style={styles.emergencyButton}>
-          <Text style={styles.emergencyText}>
-            Press this button if you need immediate help!
-          </Text>
-        </TouchableOpacity>
+
+        <ReportMissingButton />
 
         <View style={styles.infoSection}>
           <EventAdder onAddEvent={handleAddEvent} selectedDate={selectedDate} />
