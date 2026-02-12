@@ -1,5 +1,5 @@
 //Created 11/18/2025 - Rachel Townsend
-//Don't forget to install expo-location "npx expo install expo-location"
+//Don't forget to install expo-location "npx install expo-location"
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Location from "expo-location";
