@@ -14,7 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Silver Finder to use your location so your caretaker(s) can see where you are and keep you safe.",
+        "NSLocationWhenInUseUsageDescription": "Allow Silver Finder to use your location while using the app.",
+        "NSLocationAlwaysUsageDescription": "Allow Silver Finder to use your location even when the app is closed so your caretakers can always find you."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +34,20 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Silver Finder to use your location so your caretaker(s) can see where you are and keep you safe.",
+          "locationAlwaysPermission": "Allow Silver Finder to use your location even when the app is closed so your caretakers can always find you.",
+          "locationWhenInUsePermission": "Allow Silver Finder to use your location while using the app.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
