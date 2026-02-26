@@ -1,4 +1,5 @@
 //Created by Rachel Townsend
+//gets location tracking info from Supabase
 
 import React, { useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, FlatList, Platform } from "react-native";
@@ -12,6 +13,8 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
+/*
+//test block before Supabase
 const MOCK_PEOPLE = [
   { id: "p1", name: "Mom", updatedAtLabel: "Updated 2m ago" },
   { id: "p2", name: "Dad", updatedAtLabel: "Updated 6m ago" },
@@ -31,7 +34,9 @@ export default function LocationScreen() {
     if (!coords) return DEFAULT_REGION;
     return regionFrom(coords.latitude, coords.longitude);
   }, [coords]);
+  */
 
+  /*
   //mock people before connecting to Supabase
   const people = useMemo(() => {
     if (!coords) {
@@ -47,6 +52,7 @@ export default function LocationScreen() {
       longitude: coords.longitude - (idx + 1) * 0.002,
     }));
   }, [coords]);
+*/
 
   const onSelect = (id) => {
     setSelectedId(id);
