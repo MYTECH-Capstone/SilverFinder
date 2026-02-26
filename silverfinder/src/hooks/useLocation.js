@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Location from "expo-location";
-import { supabase } from "../lib/supabase"; //correct path
+import { supabase } from "../lib/supabase"; //correct path?
 
 const ACTIVE_GROUP_ID = null;
 
