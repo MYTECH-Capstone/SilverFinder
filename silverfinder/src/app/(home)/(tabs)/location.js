@@ -5,6 +5,9 @@ import React, { useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, FlatList, Platform } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
+import { supabase } from "../../../lib/supabase";
+import { useEffect } from "react";
+
 
 const DEFAULT_REGION = {
   latitude: 32.7767,
@@ -13,46 +16,47 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
-/*
-//test block before Supabase
-const MOCK_PEOPLE = [
-  { id: "p1", name: "Mom", updatedAtLabel: "Updated 2m ago" },
-  { id: "p2", name: "Dad", updatedAtLabel: "Updated 6m ago" },
-  { id: "p3", name: "Sister", updatedAtLabel: "Updated 14m ago" }
-];
+const [people, setPeople] = useState([]);
 
-function regionFrom(lat, lon) {
-  return { latitude: lat, longitude: lon, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+async function fetchPeople(){
+  const {data, error} = await supabase
+    .from("user_locations")
+    .select("*");
+  if(!error && data){
+    setPeople(data);
+  }
 }
 
-export default function LocationScreen() {
-  const mapRef = useRef(null);
-  const { coords, permissionGranted, error, start } = useLocation();
-  const [selectedId, setSelectedId] = useState("me");
+useEffect(() => {
+  fetchPeople();
 
-  const meRegion = useMemo(() => {
-    if (!coords) return DEFAULT_REGION;
-    return regionFrom(coords.latitude, coords.longitude);
-  }, [coords]);
-  */
-
-  /*
-  //mock people before connecting to Supabase
-  const people = useMemo(() => {
-    if (!coords) {
-      return MOCK_PEOPLE.map((p, idx) => ({
-        ...p,
-        latitude: DEFAULT_REGION.latitude + (idx + 1) * 0.0025,
-        longitude: DEFAULT_REGION.longitude - (idx + 1) * 0.002,
-      }));
+  const channel = supabase
+    .channel("realtime-locations")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "user_locations" },
+      (payload) => {
+        if (payload.eventType === "DELETE") {
+          setPeople((prev) => 
+          prev.filter((p) => p.user_id !== payload.old.user_id)
+        );
+      }else{
+        setPeople((prev) => {
+          const filtered = prev.filter(
+            (p) => p.user_id !== payload.new.user_id
+          );
+        return [...filtered, payload.new];
+        });
+      }
     }
-    return MOCK_PEOPLE.map((p, idx) => ({
-      ...p,
-      latitude: coords.latitude + (idx + 1) * 0.0025,
-      longitude: coords.longitude - (idx + 1) * 0.002,
-    }));
-  }, [coords]);
-*/
+    )
+    .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+}, []);
+
 
   const onSelect = (id) => {
     setSelectedId(id);
@@ -64,8 +68,8 @@ export default function LocationScreen() {
       return;
     }
 
-    const p = people.find((x) => x.id === id);
-    if (p) mapRef.current.animateToRegion(regionFrom(p.latitude, p.longitude), 600);
+    const p = people.find((x) => x.user_id === id);
+    if (p) mapRef.current.animateToRegion(regionFrom(p.lat, p.lng), 600);
   };
 
   const recenter = () => onSelect(selectedId === "me" ? "me" : selectedId);
@@ -90,9 +94,9 @@ export default function LocationScreen() {
 
         {people.map((p) => (
           <Marker
-            key={p.id}
-            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            onPress={() => onSelect(p.id)}
+            key={p.user_id}
+            coordinate={{ latitude: p.lat, longitude: p.lng }}
+            onPress={() => onSelect(p.user_id)}
           >
             <View style={[styles.personDot, selectedId === p.id && styles.personDotSelected]}>
               <Text style={styles.personDotText}>{p.name[0].toUpperCase()}</Text>
