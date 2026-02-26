@@ -1,10 +1,11 @@
-//This is the map component 
+//This is the map component that tracks the user
 //Created by Rachel Townsend
 
 import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text, Alert, ActivityIndicator} from 'react-native';
 import MapView, {Circle, Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 import useLocation from '../hooks/useLocation';
+import { supabase } from "../lib/supabase";
 
 console.log("Map is rendering"); //diagnostic
 

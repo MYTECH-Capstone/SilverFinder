@@ -6,7 +6,6 @@ import { View, Text, StyleSheet, Pressable, FlatList, Platform } from "react-nat
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
 import { supabase } from "../../../lib/supabase";
-import { useEffect } from "react";
 
 
 const DEFAULT_REGION = {
@@ -16,47 +15,111 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
-const [people, setPeople] = useState([]);
+//Fix Thurs: replace this with real group selection later
+const ACTIVE_GROUP_ID = null;
 
-async function fetchPeople(){
-  const {data, error} = await supabase
-    .from("user_locations")
-    .select("*");
-  if(!error && data){
-    setPeople(data);
-  }
+function regionFrom(lat, lon) {
+  return { latitude: lat, longitude: lon, latitudeDelta: 0.02, longitudeDelta: 0.02 };
 }
 
-useEffect(() => {
-  fetchPeople();
+function timeAgoLabel(iso) {
+  if (!iso) return "Updated just now";
+  const ms = Date.now() - new Date(iso).getTime();
+  const s = Math.max(1, Math.floor(ms / 1000));
+  if (s < 60) return `Updated ${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `Updated ${m}m ago`;
+  const h = Math.floor(m / 60);
+  return `Updated ${h}h ago`;
+}
 
-  const channel = supabase
-    .channel("realtime-locations")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "user_locations" },
-      (payload) => {
-        if (payload.eventType === "DELETE") {
-          setPeople((prev) => 
-          prev.filter((p) => p.user_id !== payload.old.user_id)
-        );
-      }else{
-        setPeople((prev) => {
-          const filtered = prev.filter(
-            (p) => p.user_id !== payload.new.user_id
-          );
-        return [...filtered, payload.new];
-        });
-      }
-    }
-    )
-    .subscribe();
+export default function LocationScreen() {
+  const mapRef = useRef(null);
+
+  const { coords, permissionGranted, error, start } = useLocation();
+
+  const [selectedId, setSelectedId] = useState("me");
+
+  //rows from Supabase locations table
+  //expected columns: user_id, group_id, latitude, longitude, updated_at
+  const [peopleRows, setPeopleRows] = useState([]);
+
+  const meRegion = useMemo(() => {
+    if (!coords) return DEFAULT_REGION;
+    return regionFrom(coords.latitude, coords.longitude);
+  }, [coords]);
+
+  const fetchPeople = useCallback(async () => {
+    //If you don't have group selection wired yet, you can fetch all rows
+    let q = supabase
+      .from("locations")
+      .select("user_id, group_id, latitude, longitude, updated_at");
+
+    if (ACTIVE_GROUP_ID) q = q.eq("group_id", ACTIVE_GROUP_ID);
+
+    const { data, error: qErr } = await q;
+
+    if (!qErr && data) setPeopleRows(data);
+    if (qErr) console.log("fetchPeople error:", qErr.message);
+  }, []);
+
+  useEffect(() => {
+    fetchPeople();
+
+    //Real-time subscription
+    const channel = supabase
+      .channel(`realtime:locations:${ACTIVE_GROUP_ID ?? "all"}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "locations" },
+        (payload) => {
+          //filter by group client-side for now
+          const next = payload.new;
+          const old = payload.old;
+
+          if (ACTIVE_GROUP_ID) {
+            const gNew = next?.group_id;
+            const gOld = old?.group_id;
+            if (gNew !== ACTIVE_GROUP_ID && gOld !== ACTIVE_GROUP_ID) return;
+          }
+
+          if (payload.eventType === "DELETE") {
+            setPeopleRows((prev) => prev.filter((p) => p.user_id !== old.user_id));
+            return;
+          }
+
+          if (!next) return;
+
+          setPeopleRows((prev) => {
+            const idx = prev.findIndex((p) => p.user_id === next.user_id && p.group_id === next.group_id);
+            if (idx === -1) return [next, ...prev];
+            const copy = prev.slice();
+            copy[idx] = next;
+            return copy;
+          });
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-}, []);
+  }, [fetchPeople]);
 
+  //Convert DB rows into display-friendly “people”
+  const people = useMemo(() => {
+    return (peopleRows || [])
+      .filter((r) => r.latitude != null && r.longitude != null)
+      .map((r) => ({
+        id: r.user_id,
+        group_id: r.group_id,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        updatedAtLabel: timeAgoLabel(r.updated_at),
+        //Do Thurs: name will come from profiles
+        name: "User",
+      }));
+  }, [peopleRows]);
 
   const onSelect = (id) => {
     setSelectedId(id);
@@ -68,8 +131,8 @@ useEffect(() => {
       return;
     }
 
-    const p = people.find((x) => x.user_id === id);
-    if (p) mapRef.current.animateToRegion(regionFrom(p.lat, p.lng), 600);
+    const p = people.find((x) => x.id === id);
+    if (p) mapRef.current.animateToRegion(regionFrom(p.latitude, p.longitude), 600);
   };
 
   const recenter = () => onSelect(selectedId === "me" ? "me" : selectedId);
@@ -83,7 +146,7 @@ useEffect(() => {
         showsUserLocation={permissionGranted}
         showsMyLocationButton={false}
       >
-        {/* accuracy circle */}
+        {/* accuracy circle for ME */}
         {coords?.accuracy ? (
           <Circle
             center={{ latitude: coords.latitude, longitude: coords.longitude }}
@@ -92,14 +155,17 @@ useEffect(() => {
           />
         ) : null}
 
+        {/* people markers from Supabase */}
         {people.map((p) => (
           <Marker
-            key={p.user_id}
-            coordinate={{ latitude: p.lat, longitude: p.lng }}
-            onPress={() => onSelect(p.user_id)}
+            key={`${p.group_id ?? "nogroup"}:${p.id}`}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            onPress={() => onSelect(p.id)}
           >
             <View style={[styles.personDot, selectedId === p.id && styles.personDotSelected]}>
-              <Text style={styles.personDotText}>{p.name[0].toUpperCase()}</Text>
+              <Text style={styles.personDotText}>
+                {(p.name?.[0] ?? "U").toUpperCase()}
+              </Text>
             </View>
           </Marker>
         ))}
@@ -153,14 +219,16 @@ useEffect(() => {
 
         <FlatList
           data={people}
-          keyExtractor={(i) => i.id}
+          keyExtractor={(i) => `${i.group_id ?? "nogroup"}:${i.id}`}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => onSelect(item.id)}
               style={[styles.row, selectedId === item.id && styles.rowSelected]}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.name[0].toUpperCase()}</Text>
+                <Text style={styles.avatarText}>
+                  {(item.name?.[0] ?? "U").toUpperCase()}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.name}</Text>
