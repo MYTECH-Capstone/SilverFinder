@@ -43,9 +43,13 @@ No need to keep tabs on many different apps, SilverFinder keeps your schedule in
 ### Groups
 Huddle up with all your loved ones in private groups, SilverFinder provides a space where family and friends can watch each others backs.
 
-<img width="293" height="633" alt="IMG_4598" src="https://github.com/user-attachments/assets/8f43bcd3-39f0-4579-a35a-f1d2a1f4fbc5" />
+<img width="293" height="633" alt="IMG_4722" src="https://github.com/user-attachments/assets/e07ef328-294a-4632-bce8-04355d220b73" />
+<img width="293" height="570" alt="IMG_4722" src="https://github.com/user-attachments/assets/559c5f1e-5f71-492a-84db-64a568137a18" />
+
+
+
 
 ### Group Chat
-weather you need to search for loved ones or to plan the next get together, keep in contact with your circles with SilverFinders in app group chats. 
+Whether you need to search for loved ones or to plan the next get together, keep in contact with your circles with SilverFinders in app group chats.
 
-
+<img width="293" height="633" alt="IMG_4724" src="https://github.com/user-attachments/assets/aa541ca4-56ad-47bd-ad55-94d196933014" />
