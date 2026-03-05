@@ -1,4 +1,4 @@
-//This is the map component that tracks the user
+//This is the map component that tracks the user - might delete this whole file
 //Created by Rachel Townsend
 
 import React, {useEffect, useRef, useState} from 'react';
