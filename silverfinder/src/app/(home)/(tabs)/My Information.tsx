@@ -211,6 +211,7 @@ export default function MyInformationScreen() {
           </Picker>
         </View>
         {updatingInterval && <ActivityIndicator size="small" color= "#ff5f15" style={{ marginTop: 5 }} />}
+           <Text style={styles.helperText}>{profile?.email_interval === 0 ? 'Reminders are turned off.' : `Your current interval is ${profile?.email_interval} days.`}</Text>       
       </View>
 
     </ScrollView>
