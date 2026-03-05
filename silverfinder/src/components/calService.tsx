@@ -19,21 +19,35 @@ export async function requestCalendarPermissions() {
 
 export async function getDefaultCalendarId() {
   const calendars = await Calendar.getCalendarsAsync(
-    Calendar.EntityTypes.EVENT
+    Calendar.EntityTypes.EVENT,
   );
-  const defaultCalendar =
-    calendars.find((c) => c?.source?.isLocalAccount) ?? calendars[0];
-  return defaultCalendar?.id ?? null;
+  let writableCalendar = calendars.find((c) => c.allowsModifications);
+  if (!writableCalendar) {
+    const defaultSource =
+      calendars.find((c) => c.source?.isLocalAccount) ?? calendars[0];
+    const newCalendarId = await Calendar.createCalendarAsync({
+      title: "SilverFinder Calendar",
+      color: "#f89f2b",
+      entityType: Calendar.EntityTypes.EVENT,
+      sourceId: defaultSource?.source?.id,
+      source: defaultSource?.source,
+      name: "SilverFinder Calendar",
+      ownerAccount: defaultSource?.ownerAccount ?? "local",
+      accessLevel: Calendar.CalendarAccessLevel.OWNER,
+    });
+    writableCalendar = { id: newCalendarId } as any;
+  }
+  return writableCalendar.id;
 }
 
 export async function fetchDeviceEvents(start: Date, end: Date) {
   const calendars = await Calendar.getCalendarsAsync(
-    Calendar.EntityTypes.EVENT
+    Calendar.EntityTypes.EVENT,
   );
   const events = await Calendar.getEventsAsync(
     calendars.map((c) => c.id),
     start,
-    end
+    end,
   );
   return events.map((event) => ({
     id: event.id,
@@ -63,24 +77,20 @@ export async function saveToDeviceCalendar(event: CalendarEvent) {
 
   try {
     if (event.startDate && event.endDate) {
-      // Use explicitly provided start/end
       eventStart = event.startDate;
       eventEnd = event.endDate;
     } else if (event.date && event.time) {
-      // Try parsing date + time
       const parsed = new Date(`${event.date} ${event.time}`);
       if (isNaN(parsed.getTime())) throw new RangeError();
       eventStart = parsed;
-      eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000); // default 1-hour duration
+      eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000);
     } else {
-      // Only date provided, make all-day
       eventStart = new Date(event.date);
       eventStart.setHours(0, 0, 0, 0);
       eventEnd = new Date(event.date);
       eventEnd.setHours(23, 59, 59, 999);
     }
   } catch {
-    // Fallback: treat as all-day if any error occurs
     const fallbackDate = event.startDate || new Date(event.date);
     eventStart = new Date(fallbackDate);
     eventStart.setHours(0, 0, 0, 0);

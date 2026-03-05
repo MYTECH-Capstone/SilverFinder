@@ -53,7 +53,7 @@ export function EventsList({ selectedDate, events, onDeleteEvent }) {
             onPress={() => onDeleteEvent(item)}
           >
             <Text style={styles.deleteText}>
-              {item.isDeviceEvent ? "imported from local calendar" : "Delete"}
+              {item.isDeviceEvent ? "Imported from local calendar" : "Delete"}
             </Text>
           </TouchableOpacity>
         </View>
