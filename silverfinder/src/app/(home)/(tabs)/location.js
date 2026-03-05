@@ -1,12 +1,13 @@
-//Created by Rachel Townsend
-//gets location tracking info from Supabase
+// Created by Rachel Townsend
+// Updated: this is the Tab 2 location screen — replaces Map.js
+// Pulls live locations from Supabase
+// Note: name display from profiles table is wired up (see "Do Thurs" note below)
 
 import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, FlatList, Platform } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
 import { supabase } from "../../../lib/supabase";
-
 
 const DEFAULT_REGION = {
   latitude: 32.7767,
@@ -15,7 +16,8 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
-//Fix Thurs: replace this with real group selection later
+// TODO: Replace with real group selection
+// Must match ACTIVE_GROUP_ID in useLocation.js — keep them in sync
 const ACTIVE_GROUP_ID = null;
 
 function regionFrom(lat, lon) {
@@ -39,10 +41,21 @@ export default function LocationScreen() {
   const { coords, permissionGranted, error, start } = useLocation();
 
   const [selectedId, setSelectedId] = useState("me");
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  //rows from Supabase locations table
-  //expected columns: user_id, group_id, latitude, longitude, updated_at
+  // Rows from Supabase locations table
+  // Expected columns: user_id, group_id, latitude, longitude, updated_at
+  // Joined: profiles(display_name)  <-- add this join once profiles table is ready
   const [peopleRows, setPeopleRows] = useState([]);
+
+  // Get logged-in user's ID so we can exclude ourselves from the "people" list
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    getUser();
+  }, []);
 
   const meRegion = useMemo(() => {
     if (!coords) return DEFAULT_REGION;
@@ -50,38 +63,45 @@ export default function LocationScreen() {
   }, [coords]);
 
   const fetchPeople = useCallback(async () => {
-    //If you don't have group selection wired yet, you can fetch all rows
     let q = supabase
       .from("locations")
       .select("user_id, group_id, latitude, longitude, updated_at");
+      // TODO: once profiles table exists, change select to:
+      // .select("user_id, group_id, latitude, longitude, updated_at, profiles(display_name)")
 
     if (ACTIVE_GROUP_ID) q = q.eq("group_id", ACTIVE_GROUP_ID);
 
-    const { data, error: qErr } = await q;
+    // Exclude own row from the people list — we render ourselves separately as "Me"
+    if (currentUserId) q = q.neq("user_id", currentUserId);
 
+    const { data, error: qErr } = await q;
     if (!qErr && data) setPeopleRows(data);
     if (qErr) console.log("fetchPeople error:", qErr.message);
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
+    if (!currentUserId) return; // wait until we know who we are
     fetchPeople();
 
-    //Real-time subscription
+    // Real-time subscription for group location updates
     const channel = supabase
       .channel(`realtime:locations:${ACTIVE_GROUP_ID ?? "all"}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "locations" },
         (payload) => {
-          //filter by group client-side for now
           const next = payload.new;
           const old = payload.old;
 
+          // Client-side group filter
           if (ACTIVE_GROUP_ID) {
             const gNew = next?.group_id;
             const gOld = old?.group_id;
             if (gNew !== ACTIVE_GROUP_ID && gOld !== ACTIVE_GROUP_ID) return;
           }
+
+          // Don't add ourselves to the people list via realtime either
+          if (next?.user_id === currentUserId) return;
 
           if (payload.eventType === "DELETE") {
             setPeopleRows((prev) => prev.filter((p) => p.user_id !== old.user_id));
@@ -91,7 +111,9 @@ export default function LocationScreen() {
           if (!next) return;
 
           setPeopleRows((prev) => {
-            const idx = prev.findIndex((p) => p.user_id === next.user_id && p.group_id === next.group_id);
+            const idx = prev.findIndex(
+              (p) => p.user_id === next.user_id && p.group_id === next.group_id
+            );
             if (idx === -1) return [next, ...prev];
             const copy = prev.slice();
             copy[idx] = next;
@@ -104,9 +126,9 @@ export default function LocationScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchPeople]);
+  }, [fetchPeople, currentUserId]);
 
-  //Convert DB rows into display-friendly “people”
+  // Convert DB rows into display-friendly "people"
   const people = useMemo(() => {
     return (peopleRows || [])
       .filter((r) => r.latitude != null && r.longitude != null)
@@ -116,14 +138,13 @@ export default function LocationScreen() {
         latitude: r.latitude,
         longitude: r.longitude,
         updatedAtLabel: timeAgoLabel(r.updated_at),
-        //Do Thurs: name will come from profiles
-        name: "User",
+        // TODO: swap "User" for r.profiles?.display_name once profiles join is added
+        name: r.profiles?.display_name ?? "User",
       }));
   }, [peopleRows]);
 
   const onSelect = (id) => {
     setSelectedId(id);
-
     if (!mapRef.current) return;
 
     if (id === "me" && coords) {
@@ -135,7 +156,7 @@ export default function LocationScreen() {
     if (p) mapRef.current.animateToRegion(regionFrom(p.latitude, p.longitude), 600);
   };
 
-  const recenter = () => onSelect(selectedId === "me" ? "me" : selectedId);
+  const recenter = () => onSelect(selectedId);
 
   return (
     <View style={styles.container}>
@@ -146,16 +167,18 @@ export default function LocationScreen() {
         showsUserLocation={permissionGranted}
         showsMyLocationButton={false}
       >
-        {/* accuracy circle for ME */}
+        {/* Accuracy circle for own location */}
         {coords?.accuracy ? (
           <Circle
             center={{ latitude: coords.latitude, longitude: coords.longitude }}
             radius={Math.min(Math.max(coords.accuracy, 10), 120)}
             strokeWidth={1}
+            strokeColor="rgba(66, 133, 244, 0.4)"
+            fillColor="rgba(66, 133, 244, 0.1)"
           />
         ) : null}
 
-        {/* people markers from Supabase */}
+        {/* Group members' markers from Supabase */}
         {people.map((p) => (
           <Marker
             key={`${p.group_id ?? "nogroup"}:${p.id}`}
@@ -179,7 +202,7 @@ export default function LocationScreen() {
             ? error
             : permissionGranted
               ? coords
-                ? "Live tracking enabled"
+                ? `Live tracking enabled · ${people.length} other${people.length !== 1 ? "s" : ""} visible`
                 : "Getting location…"
               : "Permission needed"}
         </Text>
@@ -196,10 +219,11 @@ export default function LocationScreen() {
         <Text style={styles.recenterBtnText}>◎</Text>
       </Pressable>
 
-      {/* Bottom “people” drawer */}
+      {/* Bottom people drawer */}
       <View style={styles.drawer}>
         <Text style={styles.drawerTitle}>People</Text>
 
+        {/* Own row */}
         <Pressable
           onPress={() => onSelect("me")}
           style={[styles.row, selectedId === "me" && styles.rowSelected]}
@@ -211,12 +235,13 @@ export default function LocationScreen() {
             <Text style={styles.rowTitle}>You</Text>
             <Text style={styles.rowSub}>
               {coords
-                ? `Lat ${coords.latitude.toFixed(5)}, Lon ${coords.longitude.toFixed(5)}`
+                ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`
                 : "Waiting for GPS…"}
             </Text>
           </View>
         </Pressable>
 
+        {/* Group members */}
         <FlatList
           data={people}
           keyExtractor={(i) => `${i.group_id ?? "nogroup"}:${i.id}`}
@@ -237,6 +262,11 @@ export default function LocationScreen() {
             </Pressable>
           )}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              {ACTIVE_GROUP_ID ? "No other members online" : "No group selected yet"}
+            </Text>
+          }
         />
       </View>
     </View>
@@ -264,7 +294,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "black",
+    backgroundColor: "#4CAF50",
   },
   primaryBtnText: { color: "white", fontWeight: "700" },
 
@@ -314,8 +344,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 10,
   },
-  avatarMe: { backgroundColor: "rgba(0,0,0,0.2)" },
-  avatarText: { fontSize: 12, fontWeight: "800" },
+  avatarMe: { backgroundColor: "#4CAF50" },
+  avatarText: { fontSize: 12, fontWeight: "800", color: "white" },
 
   sep: { height: 6 },
 
@@ -323,7 +353,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "black",
+    backgroundColor: "#333",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -331,4 +361,12 @@ const styles = StyleSheet.create({
   },
   personDotSelected: { transform: [{ scale: 1.15 }] },
   personDotText: { color: "white", fontWeight: "800", fontSize: 12 },
+
+  emptyText: {
+    fontSize: 13,
+    color: "#999",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 12,
+  },
 });
