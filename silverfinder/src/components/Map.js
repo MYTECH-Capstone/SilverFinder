@@ -1,7 +1,7 @@
 //This is the map component that tracks the user - might delete this whole file
 //Created by Rachel Townsend
 
-import React, {useEffect, useRef, useState} from 'react';
+/*import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text, Alert, ActivityIndicator} from 'react-native';
 import MapView, {Circle, Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 import useLocation from '../hooks/useLocation';
@@ -452,3 +452,4 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
 });
+*/
