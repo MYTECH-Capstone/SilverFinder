@@ -220,6 +220,54 @@ export default function MyInformationScreen() {
 }
 
 
+// testing functions below, will self test
+
+// returns profile with new interval
+export function intervalCheck(profile: any, days: number) {
+  return { ...profile, email_interval:days };
+}
+
+// text for display based on interval value
+
+export function intervalText( interval: number | null | undefined) {
+  if (interval === 0) {
+    return 'Reminders are turned off.';
+  } else if (!interval) return 'Your current interval is 90 days.';
+  else return `Your current interval is ${interval} days.`;
+}
+
+export function profileFieldCheck(value: any) {
+  return value ?? '';
+}
+
+// interval check test, if interval updates correctly should be good
+
+console.assert(intervalCheck ({ email_interval: 90 }, 30).email_interval === 30,
+ 'interval check failed, should be 30 days');
+
+// interval text test, should print out correct string based of the amount of days
+
+console.log("==TEST MODE ACTIVE==");
+if (intervalText(180) !== "Your current interval is 180 days.") {
+  throw new Error("formatIntervalText failed for 180");
+}
+
+if (intervalText(90) !== "Your current interval is 90 days.") {
+  throw new Error("formatIntervalText failed for 90");
+}
+
+// tests to make sure empty strings are for null and undefined fields
+
+console.assert(profileFieldCheck(null) === '', 'profile field interval check failed for null');
+
+console.assert(profileFieldCheck(undefined) === '', 'profile field interval check failed for undefined');
+
+console.assert(profileFieldCheck('test') === 'test', 'profile field interval check failed for value');
+
+
+
+
+
 const styles = StyleSheet.create({
   container: {
     marginTop: 40,
