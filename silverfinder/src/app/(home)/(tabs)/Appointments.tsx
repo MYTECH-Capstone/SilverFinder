@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarShare } from "../../../components/CalendarShare";
 import { useAuth } from "../../../providers/AuthProvider";
 import ReportMissingButton from "../../../components/ReportMissingButton";
-
+import { FlashList } from "@shopify/flash-list";
 type Event = {
   subject: string;
   date: string;
@@ -103,7 +103,6 @@ export default function MainTabScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#ffd8a8" }}>
       <ScrollView style={styles.container}>
-
         <ReportMissingButton />
 
         <View style={styles.infoSection}>
@@ -127,6 +126,7 @@ export default function MainTabScreen() {
         </View>
 
         <View style={[styles.infoSectionUpcoming]}>
+          <Text style={styles.sectionTitle}>Share Calendar</Text>
           {user?.id ? (
             <CalendarShare currentUserId={user.id} />
           ) : (

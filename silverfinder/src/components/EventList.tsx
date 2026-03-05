@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 export function EventsList({ selectedDate, events, onDeleteEvent }) {
   const hexToRgba = (hex, alpha = 0.15) => {
@@ -15,57 +9,58 @@ export function EventsList({ selectedDate, events, onDeleteEvent }) {
     return `rgba(${r},${g},${b},${alpha})`;
   };
 
+  if (!events || events.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.empty}>No events for this date.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <FlatList
-        data={events}
-        keyExtractor={(_, i) => i.toString()}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No events for this date.</Text>
-        }
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.eventBox,
-              {
-                borderLeftColor: item.color,
-                backgroundColor: hexToRgba(item.color),
-              },
-            ]}
-          >
-            <View style={styles.headerRow}>
-              <Text style={[styles.title, { color: item.color }]}>
-                {item.subject}
-              </Text>
+      {events.map((item, i) => (
+        <View
+          key={i}
+          style={[
+            styles.eventBox,
+            {
+              borderLeftColor: item.color,
+              backgroundColor: hexToRgba(item.color),
+            },
+          ]}
+        >
+          <View style={styles.headerRow}>
+            <Text style={[styles.title, { color: item.color }]}>
+              {item.subject}
+            </Text>
 
-              <Text style={[styles.category, { color: item.color }]}>
-                {item.category}
-              </Text>
-            </View>
-
-            <Text style={styles.value}>{item.time || "No time"}</Text>
-            <Text style={styles.value}>{item.location || "No location"}</Text>
-            {item.memo && <Text style={styles.memo}>{item.memo}</Text>}
-
-            <TouchableOpacity
-              disabled={!!item.isDeviceEvent}
-              style={[
-                styles.deleteButton,
-                item.isDeviceEvent && { backgroundColor: "#ccc" },
-              ]}
-              onPress={() => onDeleteEvent(item)}
-            >
-              <Text style={styles.deleteText}>
-                {item.isDeviceEvent ? "Device Event" : "Delete"}
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.category, { color: item.color }]}>
+              {item.category}
+            </Text>
           </View>
-        )}
-      />
+
+          <Text style={styles.value}>{item.time || "No time"}</Text>
+          <Text style={styles.value}>{item.location || "No location"}</Text>
+          {item.memo && <Text style={styles.memo}>{item.memo}</Text>}
+
+          <TouchableOpacity
+            disabled={!!item.isDeviceEvent}
+            style={[
+              styles.deleteButton,
+              item.isDeviceEvent && { backgroundColor: "#ccc" },
+            ]}
+            onPress={() => onDeleteEvent(item)}
+          >
+            <Text style={styles.deleteText}>
+              {item.isDeviceEvent ? "imported from local calendar" : "Delete"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ))}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { padding: 14 },
   eventBox: {
@@ -75,8 +70,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderLeftWidth: 5,
   },
-  headerRow: { flexDirection: "row", justifyContent: "space-between" },
-  title: { fontWeight: "700", fontSize: 18 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  title: { fontWeight: "700", fontSize: 18, flexShrink: 1 },
   category: { fontSize: 14, fontStyle: "italic" },
   value: { fontSize: 16, color: "#555" },
   memo: { fontStyle: "italic", color: "#333", marginTop: 4 },
