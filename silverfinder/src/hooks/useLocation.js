@@ -1,18 +1,15 @@
 // Created 11/18/2025 - Rachel Townsend
-// Updated 3/4/26: supabase integration
+// Updated: no more hardcoded null
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Location from "expo-location";
 import { supabase } from "../lib/supabase";
 
-// TODO: Replace with real group selection when ready
-// Set ACTIVE_GROUP_ID to a real value (e.g. from auth context or props) to enable DB writes
-// While null, location will still display on-device but will NOT be saved to Supabase
-const ACTIVE_GROUP_ID = null;
-
-export function useLocation() {
+// groupId is passed in from the screen once the user's profile is loaded
+// Until it's provided, location is tracked on-device but NOT written to Supabase
+export function useLocation(groupId = null) {
   const [permissionGranted, setPermissionGranted] = useState(false);
-  const [coords, setCoords] = useState(null); // { latitude, longitude, accuracy, heading }
+  const [coords, setCoords] = useState(null);
   const [error, setError] = useState(null);
   const subRef = useRef(null);
   const lastSentAtRef = useRef(0);
@@ -26,14 +23,12 @@ export function useLocation() {
     subRef.current = null;
   }, []);
 
-  // Fixed: was "pushToSupabasae" (typo) — renamed and actually called below
   const pushToSupabase = useCallback(async (c) => {
     if (!c) return;
-    // Location writes require a group_id — skip until group is selected
-    if (!ACTIVE_GROUP_ID) return;
+    if (!groupId) return; // no group yet — skip DB write silently
 
     const now = Date.now();
-    if (now - lastSentAtRef.current < 2500) return; // max ~every 2.5s
+    if (now - lastSentAtRef.current < 2500) return; // throttle to ~every 2.5s
     lastSentAtRef.current = now;
 
     try {
@@ -47,12 +42,11 @@ export function useLocation() {
         .upsert(
           {
             user_id: user.id,
-            group_id: ACTIVE_GROUP_ID,
+            group_id: groupId,
             latitude: c.latitude,
             longitude: c.longitude,
             updated_at: new Date().toISOString(),
           },
-          // Requires UNIQUE(group_id, user_id) constraint in DB
           { onConflict: "group_id,user_id" }
         );
 
@@ -60,7 +54,7 @@ export function useLocation() {
     } catch (e) {
       console.log("Supabase location upsert failed:", e?.message ?? e);
     }
-  }, []);
+  }, [groupId]);
 
   const start = useCallback(async () => {
     setError(null);
@@ -74,7 +68,7 @@ export function useLocation() {
       return;
     }
 
-    // Get an initial fix so the map can center immediately
+    // Get an initial fix immediately so the map can center
     const first = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
@@ -87,7 +81,7 @@ export function useLocation() {
     };
 
     setCoords(firstCoords);
-    pushToSupabase(firstCoords); // Fixed: was never called for initial fix
+    pushToSupabase(firstCoords);
 
     stop();
     subRef.current = await Location.watchPositionAsync(
@@ -104,7 +98,7 @@ export function useLocation() {
           heading: pos.coords.heading,
         };
         setCoords(updated);
-        pushToSupabase(updated); // Fixed: was never called in the watch callback
+        pushToSupabase(updated);
       }
     );
   }, [stop, pushToSupabase]);
@@ -113,6 +107,13 @@ export function useLocation() {
     start();
     return () => stop();
   }, [start, stop]);
+
+  // Re-push to Supabase when groupId becomes available (user just joined/created a group)
+  useEffect(() => {
+    if (groupId && coords) {
+      pushToSupabase(coords);
+    }
+  }, [groupId]);
 
   return { coords, permissionGranted, error, start, stop };
 }
