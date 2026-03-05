@@ -18,6 +18,8 @@ export async function requestCalendarPermissions() {
 }
 
 export async function getDefaultCalendarId() {
+  const granted = await requestCalendarPermissions();
+  if (!granted) return null;
   const calendars = await Calendar.getCalendarsAsync(
     Calendar.EntityTypes.EVENT,
   );
@@ -41,6 +43,8 @@ export async function getDefaultCalendarId() {
 }
 
 export async function fetchDeviceEvents(start: Date, end: Date) {
+  const granted = await requestCalendarPermissions();
+  if (!granted) return null;
   const calendars = await Calendar.getCalendarsAsync(
     Calendar.EntityTypes.EVENT,
   );
