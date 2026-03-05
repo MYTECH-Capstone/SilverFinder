@@ -1,7 +1,7 @@
 //Created by Rachel Townsend
 //gets location tracking info from Supabase
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, FlatList, Platform } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
