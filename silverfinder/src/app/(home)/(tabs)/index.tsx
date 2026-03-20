@@ -16,8 +16,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
-// TODO: Replace with real group selection when ready — must match useLocation.js
-const ACTIVE_GROUP_ID = null;
+//const ACTIVE_GROUP_ID = null;
 
 // Drawer snap heights: collapsed shows just the handle + title, expanded shows people list
 const DRAWER_COLLAPSED_HEIGHT = 56;
