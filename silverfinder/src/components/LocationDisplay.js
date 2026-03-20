@@ -1,4 +1,4 @@
-//Created on 11.19.25 - Rachel Townsend
+//Created on 11.19.25 - Rachel Townsend - prototype
 /*
 import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator} from 'react-native';

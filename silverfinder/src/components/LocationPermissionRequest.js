@@ -1,5 +1,6 @@
 //Location permission request component 
 //Created on 10/27/25 by Rachel Townsend
+//will delete this file and just use index.tsx
 
 import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Alert} from 'react-native';

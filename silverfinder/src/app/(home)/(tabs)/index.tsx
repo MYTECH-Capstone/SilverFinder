@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, Pressable, FlatList, Platform, Animated, Toucha
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
 import { supabase } from "../../../lib/supabase";
+import { fetchGroup } from "../../tabs/GroupPage" //for getting the fetchGroup function
 
 const DEFAULT_REGION = {
   latitude: 32.7767,
@@ -15,8 +16,6 @@ const DEFAULT_REGION = {
   latitudeDelta: 0.04,
   longitudeDelta: 0.04,
 };
-
-//const ACTIVE_GROUP_ID = null;
 
 // Drawer snap heights: collapsed shows just the handle + title, expanded shows people list
 const DRAWER_COLLAPSED_HEIGHT = 56;

@@ -1,5 +1,6 @@
-//This is the map component that tracks the user - might delete this whole file
+//This is the map prototype that tracks the user
 //Created by Rachel Townsend
+
 
 /*import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text, Alert, ActivityIndicator} from 'react-native';

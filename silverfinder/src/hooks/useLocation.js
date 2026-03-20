@@ -1,12 +1,13 @@
 // Created 11/18/2025 - Rachel Townsend
 // Updated: no more hardcoded null
+// this is the file where background tracking needs to be enabled
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Location from "expo-location";
 import { supabase } from "../lib/supabase";
 
 // groupId is passed in from the screen once the user's profile is loaded
-// Until it's provided, location is tracked on-device but NOT written to Supabase
+// Until it's provided, location is tracked on-device but not to Supabase
 export function useLocation(groupId = null) {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [coords, setCoords] = useState(null);
@@ -25,10 +26,10 @@ export function useLocation(groupId = null) {
 
   const pushToSupabase = useCallback(async (c) => {
     if (!c) return;
-    if (!groupId) return; // no group yet — skip DB write silently
+    if (!groupId) return; // no group yet
 
     const now = Date.now();
-    if (now - lastSentAtRef.current < 2500) return; // throttle to ~every 2.5s
+    if (now - lastSentAtRef.current < 2500) return; 
     lastSentAtRef.current = now;
 
     try {
