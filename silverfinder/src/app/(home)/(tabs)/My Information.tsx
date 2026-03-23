@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native'
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator} from 'react-native'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../providers/AuthProvider'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
 import Avatar from '../../components/Avatar'
+import { Picker } from '@react-native-picker/picker'
+import ReportMissingButton from '../../../components/ReportMissingButton'
 
 
 export default function MyInformationScreen() {
@@ -12,6 +14,7 @@ export default function MyInformationScreen() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const[updatingInterval, setUpdatingInterval] = useState(false)
 
   useEffect(() => {
     if (session) getProfile()
@@ -33,24 +36,45 @@ export default function MyInformationScreen() {
         .single()
 
       if(error) throw error
+
       setProfile(data)
+
     } catch (error) {
       console.error('error loading profile', error)
     } finally {
       setLoading(false)
     }  
+    
   }
 
+  async function updateInterval(days: number) {
+    try {
+      setUpdatingInterval(true)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ email_interval: days })
+        .eq('id', session?.user.id)
+      
+      if (error) throw error
+
+      setProfile({ ...profile, email_interval: days })
+
+      await getProfile();
+
+      console.log('Interval updated to', days, 'days')
+
+    } catch (error: any) {
+      console.error('Error updating interval:', error)
+    } finally {
+      setUpdatingInterval(false)
+    }
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffd8a8'}}> 
     <ScrollView style={styles.container}>
 
-      <TouchableOpacity style={styles.emergencyButton}>
-        <Text style={styles.emergencyText}>
-          Press this button if you need immediate help!
-        </Text>
-      </TouchableOpacity>
+      <ReportMissingButton />
 
       <View style={styles.profileSection}>
         <TouchableOpacity style={styles.editButton} onPress={() => router.push('/(editinfo)/EditProfile')}>
@@ -61,7 +85,7 @@ export default function MyInformationScreen() {
           url={profile?.avatar_url || null}
           size={100}
           onUpload={() => {}} 
-  />
+          />
         
         <Text style={styles.profileName}> {profile?.username || ''}</Text>
       </View>
@@ -165,10 +189,83 @@ export default function MyInformationScreen() {
         </View>
       </View>
 
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}> Reminder Frequency</Text>
+        <Text style={styles.helperText}> How often should we remind you to update this information?</Text>
+
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={profile?.email_interval || 90}
+            onValueChange={(itemValue) => updateInterval(itemValue)}
+            enabled={!updatingInterval}
+            style={{
+              fontSize: 16,
+              paddingHorizontal: 10,  
+              paddingVertical: 12,
+            }}
+          >
+            <Picker.Item label="Every 30 days" value={30} />
+            <Picker.Item label="Every 90 days" value={90} />
+            <Picker.Item label="Every 180 days" value={180} />  
+            <Picker.Item label="Turn Off Reminders" value={0} />
+          </Picker>
+        </View>
+        {updatingInterval && <ActivityIndicator size="small" color= "#ff5f15" style={{ marginTop: 5 }} />}
+           <Text style={styles.helperText}>{profile?.email_interval === 0 ? 'Reminders are turned off.' : `Your current interval is ${profile?.email_interval} days.`}</Text>       
+      </View>
+
     </ScrollView>
     </View>
   );
 }
+
+
+// testing functions below, will self test
+
+// returns profile with new interval
+export function intervalCheck(profile: any, days: number) {
+  return { ...profile, email_interval:days };
+}
+
+// text for display based on interval value
+
+export function intervalText( interval: number | null | undefined) {
+  if (interval === 0) {
+    return 'Reminders are turned off.';
+  } else if (!interval) return 'Your current interval is 90 days.';
+  else return `Your current interval is ${interval} days.`;
+}
+
+export function profileFieldCheck(value: any) {
+  return value ?? '';
+}
+
+// interval check test, if interval updates correctly should be good
+
+console.assert(intervalCheck ({ email_interval: 90 }, 30).email_interval === 30,
+ 'interval check failed, should be 30 days');
+
+// interval text test, should print out correct string based of the amount of days
+
+console.log("==TEST MODE ACTIVE==");
+if (intervalText(180) !== "Your current interval is 180 days.") {
+  throw new Error("formatIntervalText failed for 180");
+}
+
+if (intervalText(90) !== "Your current interval is 90 days.") {
+  throw new Error("formatIntervalText failed for 90");
+}
+
+// tests to make sure empty strings are for null and undefined fields
+
+console.assert(profileFieldCheck(null) === '', 'profile field interval check failed for null');
+
+console.assert(profileFieldCheck(undefined) === '', 'profile field interval check failed for undefined');
+
+console.assert(profileFieldCheck('test') === 'test', 'profile field interval check failed for value');
+
+
+
 
 
 const styles = StyleSheet.create({
@@ -289,6 +386,21 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
+  },
+  helperText: {
+    fontSize: 14,
+    color: '#0a0a0aff',
+    marginBottom: 10,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    margin: 10,
+    height: 80,
+    overflow: 'hidden',
+    backgroundColor: '#e6e6e6',
+    justifyContent: 'center',
   },
 });
 

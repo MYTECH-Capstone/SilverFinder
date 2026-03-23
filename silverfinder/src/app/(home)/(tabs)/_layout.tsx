@@ -19,6 +19,7 @@ export default function TabsNavigator() {
       <Tabs.Screen
         name="index"
         options={{
+          headerShown: false,
           title: "Location",
           tabBarIcon: () => (
             <Ionicons name="location-outline" size={24} color="black" />
@@ -28,6 +29,7 @@ export default function TabsNavigator() {
       <Tabs.Screen
         name="My Information"
         options={{
+          headerShown: false,
           title: "My Information",
           tabBarIcon: () => (
             <Ionicons name="settings-outline" size={24} color="black" />

@@ -14,7 +14,7 @@ export default function MyGroups() {
 
     const fetchGroups = async () => {
       try {
-        // Step 1 — Get list of IDs the user belongs to
+        // Get list of IDs the user belongs to
         const { data: memberships, error: membershipErr } = await supabase
           .from('group_members')
           .select('group_id')
@@ -29,7 +29,7 @@ export default function MyGroups() {
           return;
         }
 
-        // Step 2 — Load group details
+        // Load group details
         const { data: groupData, error: groupErr } = await supabase
           .from('home_groups')
           .select('id, group_name, join_code')

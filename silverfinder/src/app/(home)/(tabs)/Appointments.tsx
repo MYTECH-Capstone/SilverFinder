@@ -14,7 +14,8 @@ import { fetchDeviceEvents } from "../../../components/calService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarShare } from "../../../components/CalendarShare";
 import { useAuth } from "../../../providers/AuthProvider";
-
+import ReportMissingButton from "../../../components/ReportMissingButton";
+import { requestCalendarPermissions } from "../../../components/calService";
 type Event = {
   subject: string;
   date: string;
@@ -29,12 +30,19 @@ type Event = {
 const STORAGE_KEY = "@local_events";
 
 export default function MainTabScreen() {
+  const [calendarGranted, setCalendarGranted] = useState(false);
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(toDateId(new Date()));
   const [events, setEvents] = useState<{ [dateId: string]: Event[] }>({});
   const [deviceEvents, setDeviceEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
 
+  useEffect(() => {
+    (async () => {
+      const granted = await requestCalendarPermissions();
+      setCalendarGranted(granted);
+    })();
+  }, []);
   useEffect(() => {
     const loadDeviceEvents = async () => {
       const start = new Date();
@@ -102,11 +110,7 @@ export default function MainTabScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#ffd8a8" }}>
       <ScrollView style={styles.container}>
-        <TouchableOpacity style={styles.emergencyButton}>
-          <Text style={styles.emergencyText}>
-            Press this button if you need immediate help!
-          </Text>
-        </TouchableOpacity>
+        <ReportMissingButton />
 
         <View style={styles.infoSection}>
           <EventAdder onAddEvent={handleAddEvent} selectedDate={selectedDate} />
@@ -118,7 +122,6 @@ export default function MainTabScreen() {
             onSelectDate={setSelectedDate}
           />
         </View>
-
         <View style={[styles.infoSectionUpcoming]}>
           <Text style={styles.sectionTitle}>Upcoming</Text>
           <EventsList
@@ -129,6 +132,7 @@ export default function MainTabScreen() {
         </View>
 
         <View style={[styles.infoSectionUpcoming]}>
+          <Text style={styles.sectionTitle}>Share Calendar</Text>
           {user?.id ? (
             <CalendarShare currentUserId={user.id} />
           ) : (
