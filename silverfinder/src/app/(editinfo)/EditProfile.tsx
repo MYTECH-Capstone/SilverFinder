@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar } from 'react-native'
 import { useAuth } from '../../providers/AuthProvider'
 import { supabase } from '../../lib/supabase'
-import { useRouter } from 'expo-router'
+import { useRouter} from 'expo-router'
 import Avatar from '../components/Avatar'
+
 
 
 export default function EditProfile() {
@@ -105,7 +106,7 @@ export default function EditProfile() {
       if (error) throw error
 
       Alert.alert('Profile updated!')
-      router.push('/(tabs)/My Information')
+      router.push('/(home)/(tabs)/My Information')
     } catch (error: any) {
        Alert.alert('update error', error.message)
     } finally {
@@ -115,11 +116,10 @@ export default function EditProfile() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff8f3' }}>
-      
       <StatusBar barStyle="dark-content" />
  
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)/My Information')}>
+        <TouchableOpacity onPress={() => router.replace('/(home)/(tabs)/My Information')}>
           <Text style={styles.topBarBack}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Edit Profile</Text>
