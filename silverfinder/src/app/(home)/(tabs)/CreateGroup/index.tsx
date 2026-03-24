@@ -1,73 +1,154 @@
 // app/(tabs)/CreateGroup/index.tsx
+import { Stack } from 'expo-router'; // gets rid of the index header
 import React from 'react';
-import { View, Button, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Button, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
+import AntDesign from "@expo/vector-icons/AntDesign";
+
+function GroupCard({
+  icon, label, description, onPress,
+}: {
+  icon: string; label: string; description: string; onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.cardIcon}>
+        <AntDesign name={icon as any} size={26} color="#e85d04" />
+      </View>
+      <View style={styles.cardText}>
+        <Text style={styles.cardLabel}>{label}</Text>
+        <Text style={styles.cardDesc}>{description}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 export default function GroupsHome() {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1}}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Groups</Text>
+    <View style={styles.root}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Text style={styles.headerIconText}>👥</Text>
+        </View>
+        <Text style={styles.headerTitle}>Groups </Text>
+        <Text style={styles.headerSub}>
+          Create, join, or view your existing groups
+        </Text>
       </View>
 
-    <View style={styles.container}>
+      <View style={styles.divider} />
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/CreateGroup/Create')} >
-        <Text style={styles.buttonText}>CREATE A GROUP</Text>
-        </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.button}  onPress={() => router.push('/CreateGroup/Join')}>
-        <Text style={styles.buttonText}>JOIN A GROUP</Text>
-        </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button}  onPress={() => router.push('/(home)/(tabs)/CreateGroup/MyGroups')} >
-        <Text style={styles.buttonText}>VIEW MY GROUPS</Text>
-        </TouchableOpacity>
+      <View style={styles.cards}>
+        <GroupCard
+          icon="edit"
+          label="Create a Group"
+          description="Start a new group and invite people"
+          onPress={() => router.push('/CreateGroup/Create')}
+        />
+        <GroupCard
+          icon="login"
+          label="Join a Group"
+          description="Enter a code to join an existing group"
+          onPress={() => router.push('/CreateGroup/Join')}
+        />
+        <GroupCard
+          icon="team"
+          label="View My Groups"
+          description="See all the groups you belong to"
+          onPress={() => router.push('/(home)/(tabs)/CreateGroup/MyGroups')}
+        />
+      </View>
     </View>
-    </View>
-
   );
 }
-
 const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: '#ffd8a8', 
-    paddingTop: 30, 
-    paddingBottom: 60,
-    alignItems: 'center',
-  },
-  container: { 
+  root: {
     flex: 1,
-    backgroundColor: '#ffd8a8', 
-    justifyContent: 'flex-start', 
+    backgroundColor: '#fff8f3',
+    paddingHorizontal: 20,
+    paddingTop: 64,
+  },
+  header: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-   },
-  headerText: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginBottom: 32,
-        marginTop: 8,
-        color: '#333',
-        justifyContent:'flex-start'
+    paddingBottom: 24,
+    paddingTop:72,
+    gap: 8,
+    
   },
-  button: {
-    backgroundColor: '#ffa726ff', 
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginVertical: 10,
-    width: '100%',
+  headerIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#e85d040f', 
+    borderWidth: 2,
+    borderColor: '#f0d5be',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 1,
+  headerIconText: { fontSize: 28 },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
   },
-
+  headerSub: {
+    fontSize: 15,
+    color: '#a75a27',
+    textAlign: 'center',
+  },
+  divider: {
+    height: 1.5,
+    backgroundColor: '#f0d5be',
+    marginBottom: 24,
+  },
+  cards: { 
+    gap: 14 
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#f0d5be',
+    borderRadius: 16,
+    padding: 18,
+    gap: 14,
+    shadowColor: '#e85d04',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#e85d040f',
+    borderWidth: 1.5,
+    borderColor: '#f0d5be',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardText: { 
+    flex: 1, 
+    gap: 3 
+  },
+  cardLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  cardDesc: {
+    fontSize: 13,
+    color: '#7a5c45',
+    lineHeight: 18,
+  },
 });
