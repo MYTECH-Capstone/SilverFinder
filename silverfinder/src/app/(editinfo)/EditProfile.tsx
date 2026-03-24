@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { StyleSheet, View, Alert, TextInput, Text, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar } from 'react-native'
 import { useAuth } from '../../providers/AuthProvider'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'expo-router'
@@ -114,9 +114,34 @@ export default function EditProfile() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffd8a8' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff8f3' }}>
+      
+      <StatusBar barStyle="dark-content" />
+ 
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/My Information')}>
+          <Text style={styles.topBarBack}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Edit Profile</Text>
+        <TouchableOpacity
+          style={[styles.saveBtn, loading && { opacity: 0.5 }]}
+          onPress={updateProfile}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.saveBtnText}>Save</Text>
+          }
+        </TouchableOpacity>
+      </View>
+      
+      
+      
+      
+      
+      
+      
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Edit Profile</Text>
 
         <Avatar
           url={avatarUrl}
@@ -130,11 +155,10 @@ export default function EditProfile() {
         <Text style={styles.label}>Email</Text>
         <TextInput style={[styles.input, styles.disabled]} value={session?.user?.email || ''} editable={false} />
 
-        <Text style={styles.label}>Username</Text>
+        <Text style={styles.label}>Name</Text>
         <TextInput style={[styles.input]} value={username} onChangeText={setUsername} />
 
-        <Text style={styles.title}>User Info </Text>
-
+        <Text style={styles.title}>User Information </Text>
         <Text style={styles.label}>Race</Text>
         <TextInput style={styles.input} value={race} onChangeText={setRace} />
 
@@ -183,22 +207,14 @@ export default function EditProfile() {
         <Text style={styles.label}>Plate Number</Text>
         <TextInput style={styles.input} value={plateNumber} onChangeText={setPlateNumber} />
 
-       
-        <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.6 }]}
-          onPress={updateProfile}
-          disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.buttonSecondary} onPress={() => supabase.auth.signOut()}>
-          <Text style={styles.buttonText}>Sign Out</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.buttonSecondary} onPress={() => router.replace('/(tabs)/My Information')}>
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
+        <View style={styles.dangerCard}>
+          <Text style={styles.dangerCardLabel}>⚠️  Account Actions</Text>
+          <TouchableOpacity style={styles.dangerBtn} onPress={() => supabase.auth.signOut()}>
+            <Text style={styles.dangerBtnText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+ 
+        <View style={{ height: 40 }} />
 
       </ScrollView>
     </View>
@@ -207,38 +223,36 @@ export default function EditProfile() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    padding: 12,
+    marginTop: 0,
+    padding: 16,
+    backgroundColor: '#fff8f3',
   },
   label: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#a75a27', 
+    textTransform: 'uppercase', 
+    letterSpacing: 0.5,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-    fontSize: 16,
-  },
+  backgroundColor: '#ffffff', 
+  borderWidth: 1.5, 
+  borderColor: '#f0d5be',
+  borderRadius: 12,
+  padding: 14,
+  marginBottom: 20,
+  fontSize: 16,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.05,
+  shadowRadius: 2,
+  elevation: 1,
+},
   disabled: {
     backgroundColor: '#f2f2f2',
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonSecondary: {
-    backgroundColor: '#ef4444',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
+    borderColor: '#e2e2e2',
+    color: '#999',
   },
   buttonText: {
     color: '#fff',
@@ -246,8 +260,112 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 70,
+    paddingBottom: 18,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0d5be',
+  },
+  topBarBack: {
+    color: '#e85d04',
+    fontSize: 18,
+    fontWeight: '600',
+    paddingVertical: 11,
+    minWidth: 72,
+  },
+  topBarTitle: {
+    color: '#1a1a1a',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  saveBtn: {
+    backgroundColor: '#e85d04',
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 24,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  signOutSection: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0d5be',
+    alignItems: 'center',
+    gap: 8,
+  },
+  signOutLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: '#bfa090',
+  },
+  signOutText: {
+    fontSize: 15,
+    color: '#c0392b',
+    fontWeight: '600',
+  },
+  dangerCard: {
+    marginTop: 24,
+    backgroundColor: '#fff5f5',
+    borderWidth: 1.5,
+    borderColor: '#f5c6c2',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  dangerCardLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#333]',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  dangerBtn: {
+    borderWidth: 1.5,
+    borderColor: '#c0392b',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  dangerBtnText: {
+    color: '#c0392b',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  section: {
+  backgroundColor: '#ffffff',
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 24,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 8,
+  elevation: 3,
+},
+sectionTitle: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#e85d04', 
+  marginBottom: 12,
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+},
 });
