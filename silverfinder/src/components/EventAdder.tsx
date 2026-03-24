@@ -98,10 +98,6 @@ export function EventAdder({ onAddEvent, selectedDate }) {
         throw new RangeError();
       }
     } catch {
-      Alert.alert(
-        "Invalid time",
-        "Event will be saved as all-day because the time entered is invalid.",
-      );
       eventStart = new Date(parsedDate.setHours(0, 0, 0, 0));
       eventEnd = new Date(parsedDate.setHours(23, 59, 59, 999));
     }
