@@ -35,7 +35,7 @@ export default function GroupsHome() {
         <View style={styles.headerIcon}>
           <Text style={styles.headerIconText}>👥</Text>
         </View>
-        <Text style={styles.headerTitle}>Groups</Text>
+        <Text style={styles.headerTitle}>Groups </Text>
         <Text style={styles.headerSub}>
           Create, join, or view your existing groups
         </Text>
@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop:72,
     gap: 8,
+    
   },
   headerIcon: {
     width: 64,
@@ -96,6 +97,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1a1a1a',
     letterSpacing: 0.2,
+    textTransform: 'uppercase',
   },
   headerSub: {
     fontSize: 15,
