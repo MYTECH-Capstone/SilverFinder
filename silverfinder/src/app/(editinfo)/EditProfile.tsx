@@ -208,7 +208,7 @@ export default function EditProfile() {
         <TextInput style={styles.input} value={plateNumber} onChangeText={setPlateNumber} />
 
         <View style={styles.dangerCard}>
-          <Text style={styles.dangerCardLabel}>⚠️  Account Actions</Text>
+          <Text style={styles.dangerCardLabel}>⚠️ Account Actions</Text>
           <TouchableOpacity style={styles.dangerBtn} onPress={() => supabase.auth.signOut()}>
             <Text style={styles.dangerBtnText}>Sign Out</Text>
           </TouchableOpacity>
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
-    color: '#a75a27', 
+    color: '#9d4f1a', 
     textTransform: 'uppercase', 
     letterSpacing: 0.5,
   },

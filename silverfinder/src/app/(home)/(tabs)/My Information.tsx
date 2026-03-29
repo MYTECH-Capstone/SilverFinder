@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator} from 'react-native'
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator, StatusBar} from 'react-native'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../providers/AuthProvider'
 import { useRouter } from 'expo-router'
@@ -71,22 +71,32 @@ export default function MyInformationScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffd8a8'}}> 
+    <View style={{ flex: 1, backgroundColor: '#fff8f3'}}> 
     <ScrollView style={styles.container}>
+
+      <StatusBar barStyle="dark-content" />
+ 
+      <View style={styles.topBar}>
+        <View style={styles.topBarSpacer} />
+        <Text style={styles.topBarTitle}>My Information</Text>
+        <View style={styles.topBarSpacer} />
+      </View>
 
       <ReportMissingButton />
 
       <View style={styles.profileSection}>
+
         <TouchableOpacity style={styles.editButton} onPress={() => router.push('/(editinfo)/EditProfile')}>
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
 
+        <View style={styles.avatarRing}>
          <Avatar
           url={profile?.avatar_url || null}
-          size={100}
+          size={80}
           onUpload={() => {}} 
           />
-        
+        </View>
         <Text style={styles.profileName}> {profile?.username || ''}</Text>
       </View>
 
@@ -270,7 +280,7 @@ console.assert(profileFieldCheck('test') === 'test', 'profile field interval che
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
+    marginTop: 0,
     padding: 12,
   },
   label: {
@@ -328,58 +338,81 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderColor: '#f0d5be',
+    borderWidth: 2,
+    elevation: 2,
+    position: 'relative',
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 10,
-    color: '#ff5f15',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 0,
+    color: '#1a1a1a',
+    textTransform: 'capitalize',
+    paddingHorizontal: 4,
   },
   infoSection: {
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
+    borderColor: '#f0d5be',
+    borderWidth: 2,
+    gap: 10,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,    
     fontWeight: 'bold',
     marginBottom: 5,
-    color: '#ff5f15'
+    color: '#333'
   },
   editButton: {
-    backgroundColor: 'rgba(218, 144, 55, 1)',
-    padding: 10,
-    borderRadius: 8,
-    alignSelf: 'flex-end',
-    marginTop: 20,
+    backgroundColor: '#e85d04',
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
   editText: {
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: '700',
+    fontSize: 14,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 8,
   },
   descriptorBox: {
-    backgroundColor: '#e6e6e6',
-    padding: 10,
-    borderRadius: 4,
+    backgroundColor: '#fff8f3',
+    padding: 11,
+    borderRadius: 16,
+    borderColor:'#f0d5be',
+    borderWidth: 1.5,
     width: '48%',
     marginBottom: 5,
   },
   descrLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9d4f1a', 
+    textTransform: 'uppercase',
+    marginBottom: 5,
   },
   value: {
-    fontSize: 14,
-    color: '#555'
+    fontSize: 15,
+    color: '#1a1a1a',
+    fontWeight: '500',
   },
   profileImage: {
     width: 100,
@@ -402,6 +435,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6e6e6',
     justifyContent: 'center',
   },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 48,
+    paddingBottom: 10,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1.5,
+    borderColor: '#f0d5be',
+  }, 
+  topBarTitle: { 
+    color: '#1a1a1a', 
+    fontSize: 22, 
+    fontWeight: '700' 
+  },
+  topBarSpacer: { 
+    width: 50 
+  },
+  avatarRing: {
+    // These must be larger than your avatar size (80)
+    width: 90, 
+    height: 90,
+    borderRadius: 45, // Must be width/2 to be a perfect circle
+    borderWidth: 2.5, // The thickness of the orange ring
+    borderColor: '#e85d04', // The "Silver Finder" Orange
+    
+    // Centers the inner Avatar perfectly
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginBottom: 8, // Spacing before the name
+    
+    // Optional: Add a very light shadow to make the ring "pop"
+    elevation: 1, 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
 });
-
-
