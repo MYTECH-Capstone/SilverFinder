@@ -19,249 +19,237 @@ import { supabase } from "../lib/supabase";
 /* TYPES                         */
 /* ============================= */
 
-interface Profile {
+interface ElderProfile {
   id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: string | null;
+  full_name: string;
+  avatar_url: string;
+  age: number;
+  height: string;
+  weight: string;
+  blood_type: string;
+  conditions: string;
+  role: string;
 }
-
-interface ElderWithProfile {
-  id: string;
-  profiles: Profile[]; // Supabase returns relation as array
-}
-
-/* ============================= */
-/* COMPONENT                     */
-/* ============================= */
 
 export default function ReportMissingButton() {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [elders, setElders] = useState<ElderProfile[]>([]);
+  const [selectedElder, setSelectedElder] = useState<ElderProfile | null>(null);
+  const [groupId, setGroupId] = useState<string | null>(null);
 
-  const [elders, setElders] = useState<ElderWithProfile[]>([]);
-  const [selectedElder, setSelectedElder] =
-    useState<ElderWithProfile | null>(null);
-
+  // Form State
   const [lastSeenLocation, setLastSeenLocation] = useState("");
   const [description, setDescription] = useState("");
   const [lastSeenTime, setLastSeenTime] = useState("");
 
-  /* ============================= */
-  /* FETCH ELDERS                 */
-  /* ============================= */
-
   useEffect(() => {
-    if (visible) fetchElders();
+    if (visible) loadInitialData();
   }, [visible]);
 
-  const fetchElders = async () => {
-    const { data, error } = await supabase
-      .from("elders")
-      .select(
-        `
-        id,
-        profiles (
-          id,
-          full_name,
-          avatar_url,
-          role
+  /* ============================= */
+  /* DATA FETCHING                */
+  /* ============================= */
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Get the group the current user belongs to
+      const { data: memberData, error: groupErr } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("profile_id", user.id)
+        .single();
+
+      if (groupErr || !memberData)
+        throw new Error("Could not find your family group.");
+      setGroupId(memberData.group_id);
+
+      // 2. Get all members of that group who are 'elders'
+      const { data: members, error: elderErr } = await supabase
+        .from("group_members")
+        .select(
+          `
+          profiles (
+            id, full_name, avatar_url, age, 
+            height, weight, blood_type, conditions, role
+          )
+        `,
         )
-      `
-      );
+        .eq("group_id", memberData.group_id);
 
-    if (error) {
-      console.error(error);
-      Alert.alert("Error loading elders");
-      return;
+      if (elderErr) throw elderErr;
+
+      // Filter for elders only
+      const elderList = members
+        ?.map((m: any) => m.profiles)
+        .filter((p: ElderProfile) => p.role === "elder");
+
+      setElders(elderList || []);
+    } catch (err: any) {
+      Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setElders((data as ElderWithProfile[]) || []);
   };
-
-  /* ============================= */
-  /* DEV MOCK PROFILE (OPTION 1)  */
-  /* ============================= */
-
-  const profile: Profile =
-    selectedElder?.profiles?.[0] ?? {
-      id: "mock-id",
-      full_name: "John Doe",
-      avatar_url: "https://i.pravatar.cc/300",
-      role: "elder",
-    };
 
   /* ============================= */
   /* SUBMIT REPORT                */
   /* ============================= */
 
   const submitReport = async () => {
-    if (!selectedElder?.profiles?.[0]) {
-      Alert.alert("Select an elder first");
+    if (!selectedElder || !groupId) {
+      Alert.alert("Error", "Please select an elder.");
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.from("missing_reports").insert([
-      {
-        elder_id: selectedElder.id,
-        last_seen_location: lastSeenLocation,
-        last_seen_time: lastSeenTime,
-        description,
-      },
-    ]);
+    try {
+      // Get the most recent GPS location snapshot
+      const { data: loc } = await supabase
+        .from("locations")
+        .select("latitude, longitude")
+        .eq("user_id", selectedElder.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    setLoading(false);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error(error);
-      Alert.alert("Failed to submit report");
-      return;
+      // Insert into missing_reports
+      const { error: reportErr } = await supabase
+        .from("missing_reports")
+        .insert([
+          {
+            reported_user_id: selectedElder.id,
+            reporter_id: user?.id,
+            group_id: groupId,
+            last_seen_time: lastSeenTime,
+            last_seen_place: lastSeenLocation,
+            description: description,
+            captured_lat: loc?.latitude || null,
+            captured_long: loc?.longitude || null,
+            status: "active",
+          },
+        ]);
+
+      if (reportErr) throw reportErr;
+
+      Alert.alert("Success", "Missing person report filed.");
+      setVisible(false);
+    } catch (err: any) {
+      Alert.alert("Submission Failed", err.message);
+    } finally {
+      setLoading(false);
     }
-
-    Alert.alert("Report submitted successfully");
   };
 
-  /* ============================= */
-  /* GENERATE POSTER HTML         */
-  /* ============================= */
+  /* GENERATE POSTER              */
 
-  const generatePosterHTML = () => {
-    return `
+  const exportToPDF = async () => {
+    if (!selectedElder) return;
+
+    const html = `
       <html>
-        <body style="font-family: Arial; text-align:center; padding:40px;">
-          <h1 style="color:red;">MISSING ELDER</h1>
-          <img src="${profile.avatar_url ?? ""}" 
-               style="width:250px;height:250px;border-radius:10px;object-fit:cover;" />
-          <h2>${profile.full_name ?? "Unknown"}</h2>
-          <p><strong>Last Seen:</strong> ${lastSeenTime || "2:30 PM"}</p>
-          <p><strong>Location:</strong> ${lastSeenLocation || "Central Park"}</p>
-          <p>${description || "Wearing blue jacket and jeans."}</p>
+        <body style="font-family: Arial; text-align:center; padding:40px; border: 20px solid #b00020;">
+          <h1 style="color:#b00020; font-size: 50px; margin-bottom:0;">MISSING</h1>
+          <h2 style="font-size: 30px;">${selectedElder.full_name}</h2>
+          <img src="${selectedElder.avatar_url}" style="width:300px; height:300px; border-radius:10px; border: 5px solid black;" />
+          
+          <div style="margin: 20px 0; font-size: 20px;">
+            <p><strong>Age:</strong> ${selectedElder.age || "N/A"} | <strong>Height:</strong> ${selectedElder.height || "N/A"}</p>
+            <p><strong>Medical:</strong> ${selectedElder.conditions || "None listed"}</p>
+          </div>
+
+          <div style="background: #f4f4f4; padding: 20px; border-radius: 10px; text-align: left;">
+            <p><strong>Last Seen:</strong> ${lastSeenTime} at ${lastSeenLocation}</p>
+            <p><strong>Description:</strong> ${description}</p>
+          </div>
+          <h3 style="color: #b00020; margin-top: 30px;">PLEASE CONTACT AUTHORITIES IMMEDIATELY</h3>
         </body>
       </html>
     `;
+
+    const { uri } = await Print.printToFileAsync({ html });
+    await Sharing.shareAsync(uri);
   };
 
-  /* ============================= */
-  /* EXPORT PDF                   */
-  /* ============================= */
-
-  const exportToPDF = async () => {
-    if (!selectedElder?.profiles?.[0]) {
-      Alert.alert("Select an elder first");
-      return;
-    }
-
-    const { uri } = await Print.printToFileAsync({
-      html: generatePosterHTML(),
-    });
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
-    }
-  };
-
-  /* ============================= */
-  /* UI                           */
-  /* ============================= */
+  /* UI RENDERING                 */
 
   return (
     <>
-      <Pressable
-        style={styles.button}
-        onPress={() => setVisible(true)}
-      >
+      <Pressable style={styles.button} onPress={() => setVisible(true)}>
         <Text style={styles.buttonText}>Report Missing Elder</Text>
       </Pressable>
 
       <Modal visible={visible} animationType="slide">
         <View style={styles.modalContainer}>
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.title}>Create Missing Report</Text>
+            <Text style={styles.title}>New Missing Report</Text>
 
-            {/* Elder Selection */}
-            {elders.map((elder) => (
-              <Pressable
-                key={elder.id}
-                style={[
-                  styles.elderCard,
-                  selectedElder?.id === elder.id && styles.selectedCard,
-                ]}
-                onPress={() => setSelectedElder(elder)}
-              >
-                {elder.profiles?.[0]?.avatar_url && (
+            {loading && <ActivityIndicator color="#b00020" />}
+
+            <Text style={styles.label}>Select Elder:</Text>
+            <View style={styles.elderList}>
+              {elders.map((elder) => (
+                <Pressable
+                  key={elder.id}
+                  style={[
+                    styles.elderCard,
+                    selectedElder?.id === elder.id && styles.selectedCard,
+                  ]}
+                  onPress={() => setSelectedElder(elder)}
+                >
                   <Image
-                    source={{ uri: elder.profiles[0].avatar_url }}
+                    source={{ uri: elder.avatar_url }}
                     style={styles.avatar}
                   />
-                )}
-                <Text style={styles.elderName}>
-                  {elder.profiles?.[0]?.full_name}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text>{elder.full_name}</Text>
+                </Pressable>
+              ))}
+            </View>
 
-            {/* FORM */}
             <TextInput
-              placeholder="Last Seen Time"
+              placeholder="Last Seen Time (e.g. 2:00 PM)"
               value={lastSeenTime}
               onChangeText={setLastSeenTime}
               style={styles.input}
             />
-
             <TextInput
               placeholder="Last Seen Location"
               value={lastSeenLocation}
               onChangeText={setLastSeenLocation}
               style={styles.input}
             />
-
             <TextInput
-              placeholder="Description"
+              placeholder="Description (Clothing, direction of travel...)"
               value={description}
               onChangeText={setDescription}
-              style={[styles.input, { height: 100 }]}
+              style={[styles.input, { height: 80 }]}
               multiline
             />
 
-            {/* POSTER PREVIEW (ALWAYS RENDERS) */}
-            <View style={styles.posterPreview}>
-              <Text style={styles.posterTitle}>MISSING</Text>
-
-              {profile.avatar_url && (
-                <Image
-                  source={{ uri: profile.avatar_url }}
-                  style={styles.posterImage}
-                />
-              )}
-
-              <Text style={styles.posterName}>
-                {profile.full_name}
-              </Text>
-
-              <Text>Last Seen: {lastSeenTime || "2:30 PM"}</Text>
-              <Text>Location: {lastSeenLocation || "Central Park"}</Text>
-              <Text>
-                {description || "Wearing blue jacket and jeans."}
-              </Text>
-            </View>
-
-            {loading && <ActivityIndicator />}
-
             <Pressable style={styles.submitBtn} onPress={submitReport}>
-              <Text style={styles.submitText}>Submit Report</Text>
+              <Text style={styles.submitText}>Submit & Notify Group</Text>
             </Pressable>
 
             <Pressable style={styles.exportBtn} onPress={exportToPDF}>
-              <Text style={styles.submitText}>Export Poster (PDF)</Text>
+              <Text style={styles.submitText}>Generate Poster (PDF)</Text>
             </Pressable>
 
             <Pressable
-              style={styles.closeBtn}
               onPress={() => setVisible(false)}
+              style={styles.closeBtn}
             >
-              <Text>Close</Text>
+              <Text>Cancel</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -270,101 +258,52 @@ export default function ReportMissingButton() {
   );
 }
 
-/* ============================= */
-/* STYLES                        */
-/* ============================= */
-
 const styles = StyleSheet.create({
   button: {
     backgroundColor: "#b00020",
-    padding: 12,
-    borderRadius: 8,
+    padding: 15,
+    borderRadius: 10,
+    margin: 20,
     alignItems: "center",
-    margin: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
+  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: { padding: 25 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  label: { fontWeight: "bold", marginBottom: 10 },
+  elderList: { marginBottom: 20 },
   elderCard: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     borderWidth: 1,
+    borderColor: "#ddd",
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  selectedCard: {
-    borderColor: "#b00020",
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  elderName: {
-    fontSize: 16,
-  },
+  selectedCard: { borderColor: "#b00020", backgroundColor: "#fff5f5" },
+  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
   input: {
     borderWidth: 1,
-    padding: 10,
+    borderColor: "#ccc",
+    padding: 12,
     borderRadius: 8,
     marginBottom: 15,
   },
-  posterPreview: {
-    marginTop: 20,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: "#000",
-    alignItems: "center",
-  },
-  posterTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "red",
-  },
-  posterImage: {
-    width: 200,
-    height: 200,
-    marginVertical: 10,
-  },
-  posterName: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
   submitBtn: {
     backgroundColor: "#b00020",
-    padding: 12,
+    padding: 15,
     borderRadius: 8,
-    marginBottom: 10,
     alignItems: "center",
+    marginBottom: 10,
   },
   exportBtn: {
-    backgroundColor: "#000",
-    padding: 12,
+    backgroundColor: "#333",
+    padding: 15,
     borderRadius: 8,
+    alignItems: "center",
     marginBottom: 10,
-    alignItems: "center",
   },
-  submitText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  closeBtn: {
-    alignItems: "center",
-    marginTop: 20,
-  },
+  submitText: { color: "#fff", fontWeight: "bold" },
+  closeBtn: { alignItems: "center", marginTop: 10 },
 });
