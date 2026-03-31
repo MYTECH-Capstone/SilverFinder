@@ -1,14 +1,13 @@
-// Created by Rachel Townsend
-// Updated: fading status toast (3s), collapsible scrollable people drawer
-
 import React, {
   useMemo, useRef, useState, useCallback, useEffect
 } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, Platform, Animated, TouchableOpacity } from "react-native";
+import {
+  View, Text, StyleSheet, Pressable,
+  FlatList, Animated, TouchableOpacity
+} from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { useLocation } from "../../../hooks/useLocation";
 import { supabase } from "../../../lib/supabase";
-import { fetchGroup } from "../../tabs/GroupPage" //for getting the fetchGroup function
 
 const DEFAULT_REGION = {
   latitude: 32.7767,
@@ -17,7 +16,306 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
-// Drawer snap heights: collapsed shows just the handle + title, expanded shows people list
+const DRAWER_COLLAPSED_HEIGHT = 70;
+const DRAWER_EXPANDED_HEIGHT = 320;
+
+function regionFrom(lat, lon) {
+  return { latitude: lat, longitude: lon, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+}
+
+function timeAgoLabel(iso) {
+  if (!iso) return "Just now";
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  return `${Math.floor(s / 3600)}h ago`;
+}
+
+export default function LocationScreen() {
+  const mapRef = useRef(null);
+
+  const [groupIds, setGroupIds] = useState([]);
+  //const { coords, permissionGranted, start } = useLocation(groupIds[0] || null);
+  const { coords, permissionGranted, start } = useLocation(groupIds);
+
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [peopleRows, setPeopleRows] = useState([]);
+
+  const drawerHeight = useRef(new Animated.Value(DRAWER_EXPANDED_HEIGHT)).current;
+  const [drawerOpen, setDrawerOpen] = useState(true);
+
+  // ✅ HELPER: attach usernames
+  const attachProfiles = async (locations) => {
+    if (!locations?.length) return [];
+
+    const userIds = [...new Set(locations.map(l => l.user_id))];
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", userIds);
+
+    return locations.map((loc) => {
+      const profile = profiles?.find(p => p.id === loc.user_id);
+      return {
+        ...loc,
+        username: profile?.username || "User",
+      };
+    });
+  };
+
+  // 🔥 GET USER + GROUPS
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      const { data } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user.id);
+
+      setGroupIds(data?.map(g => g.group_id) || []);
+    };
+
+    init();
+  }, []);
+
+  // 🔥 FETCH PEOPLE
+  const fetchPeople = useCallback(async () => {
+    if (!groupIds.length) return;
+
+    const { data: locations, error } = await supabase
+      .from("locations")
+      .select("*")
+      .in("group_id", groupIds)
+      .neq("user_id", currentUserId);
+
+    if (error) {
+      console.log("fetch error:", error.message);
+      return;
+    }
+
+    const merged = await attachProfiles(locations);
+    setPeopleRows(merged);
+  }, [groupIds, currentUserId]);
+
+  // 🔥 REALTIME (FIXED)
+  useEffect(() => {
+    if (!groupIds.length) return;
+
+    fetchPeople();
+
+    const channel = supabase
+      .channel("locations-multi")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "locations",
+        },
+        async (payload) => {
+          const next = payload.new;
+          if (!next) return;
+
+          if (!groupIds.includes(next.group_id)) return;
+          if (next.user_id === currentUserId) return;
+
+          // ✅ attach profile BEFORE inserting
+          const [withProfile] = await attachProfiles([next]);
+
+          setPeopleRows((prev) => {
+            const idx = prev.findIndex(p => p.user_id === next.user_id);
+            if (idx === -1) return [withProfile, ...prev];
+
+            const copy = [...prev];
+            copy[idx] = { ...copy[idx], ...withProfile }; // preserve data
+            return copy;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [groupIds, currentUserId]);
+
+  // 🔥 CLEAN PEOPLE
+  const people = useMemo(() => {
+    const unique = Object.values(
+      Object.fromEntries(peopleRows.map(p => [p.user_id, p]))
+    );
+
+    return unique
+      .filter(r => r.latitude && r.longitude)
+      .map(r => ({
+        id: r.user_id,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        updatedAt: timeAgoLabel(r.updated_at),
+        name: r.username || "User",
+      }));
+  }, [peopleRows]);
+
+  // 🔥 CENTER ON FIRST LOAD ONLY
+  const hasCenteredRef = useRef(false);
+  useEffect(() => {
+    if (coords && mapRef.current && !hasCenteredRef.current) {
+      mapRef.current.animateToRegion(regionFrom(coords.latitude, coords.longitude), 800);
+      hasCenteredRef.current = true;
+    }
+  }, [coords]);
+
+  const onSelect = (p) => {
+    if (!mapRef.current) return;
+
+    mapRef.current.animateToRegion(
+      regionFrom(p.latitude, p.longitude),
+      600
+    );
+  };
+
+  const onSelectMe = () => {
+    if (!coords || !mapRef.current) return;
+
+    mapRef.current.animateToRegion(
+      regionFrom(coords.latitude, coords.longitude),
+      600
+    );
+  };
+
+  const toggleDrawer = () => {
+    Animated.spring(drawerHeight, {
+      toValue: drawerOpen ? DRAWER_COLLAPSED_HEIGHT : DRAWER_EXPANDED_HEIGHT,
+      useNativeDriver: false,
+    }).start();
+    setDrawerOpen(!drawerOpen);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <MapView
+        ref={(r) => (mapRef.current = r)}
+        style={StyleSheet.absoluteFill}
+        initialRegion={DEFAULT_REGION}
+        showsUserLocation={permissionGranted}
+      >
+        {coords && (
+          <Circle
+            center={coords}
+            radius={coords.accuracy || 20}
+          />
+        )}
+
+        {people.map((p) => (
+          <Marker
+            key={p.id}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            title={p.name}
+          />
+        ))}
+      </MapView>
+
+      <Animated.View style={[styles.drawer, { height: drawerHeight }]}>
+        <TouchableOpacity onPress={toggleDrawer} style={styles.header}>
+          <View style={styles.handle} />
+          <Text style={styles.title}>People ({people.length + 1})</Text>
+        </TouchableOpacity>
+
+        {drawerOpen && (
+          <>
+            <Pressable style={styles.meRow} onPress={onSelectMe}>
+              <Text style={styles.name}>You</Text>
+              <Text style={styles.sub}>
+                {coords
+                  ? `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
+                  : "Locating..."}
+              </Text>
+            </Pressable>
+
+            <FlatList
+              data={people}
+              keyExtractor={(i) => i.id}
+              renderItem={({ item }) => (
+                <Pressable style={styles.row} onPress={() => onSelect(item)}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.sub}>{item.updatedAt}</Text>
+                </Pressable>
+              )}
+            />
+          </>
+        )}
+      </Animated.View>
+
+      {!permissionGranted && (
+        <Pressable onPress={start}>
+          <Text>Enable Location</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  drawer: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  header: {
+    alignItems: "center",
+    padding: 10,
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#ccc",
+    borderRadius: 3,
+    marginBottom: 6,
+  },
+  title: {
+    fontWeight: "700",
+  },
+  row: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  meRow: {
+    padding: 14,
+    backgroundColor: "#f5f5f5",
+  },
+  name: {
+    fontWeight: "600",
+  },
+  sub: {
+    fontSize: 12,
+    color: "#666",
+  },
+});
+
+/*
+// prev working march 23 8:36 pm
+import React, {
+  useMemo, useRef, useState, useCallback, useEffect
+} from "react";
+import { View, Text, StyleSheet, Pressable, FlatList, Platform, Animated, TouchableOpacity } from "react-native";
+import MapView, { Marker, Circle } from "react-native-maps";
+import { useLocation } from "../../../hooks/useLocation";
+import { supabase } from "../../../lib/supabase";
+
+const DEFAULT_REGION = {
+  latitude: 32.7767,
+  longitude: -96.7970,
+  latitudeDelta: 0.04,
+  longitudeDelta: 0.04,
+};
+
 const DRAWER_COLLAPSED_HEIGHT = 56;
 const DRAWER_EXPANDED_HEIGHT = 320;
 
@@ -38,33 +336,54 @@ function timeAgoLabel(iso) {
 
 export default function LocationScreen() {
   const mapRef = useRef(null);
-  const { coords, permissionGranted, error, start } = useLocation();
+
+  const [groupId, setGroupId] = useState(null);
+  const { coords, permissionGranted, error, start } = useLocation(groupId);
 
   const [selectedId, setSelectedId] = useState("me");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [peopleRows, setPeopleRows] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(true);
 
-  // Animated values
   const drawerHeight = useRef(new Animated.Value(DRAWER_EXPANDED_HEIGHT)).current;
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastShownForCoords = useRef(false);
-  const toastTimer = useRef(null);
 
-  // Show toast when we first get coords, then fade out after 3s
+  // ✅ FETCH USER + GROUP
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      const { data } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      if (data && data.length > 0) {
+        console.log("GroupId:", data[0].group_id);
+        setGroupId(data[0].group_id);
+      }
+    };
+
+    init();
+  }, []);
+
+  // ✅ TOAST
   useEffect(() => {
     if (coords && !toastShownForCoords.current) {
       toastShownForCoords.current = true;
 
-      // Fade in
       Animated.timing(toastOpacity, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
 
-      // Fade out after 3s
-      toastTimer.current = setTimeout(() => {
+      setTimeout(() => {
         Animated.timing(toastOpacity, {
           toValue: 0,
           duration: 600,
@@ -72,84 +391,56 @@ export default function LocationScreen() {
         }).start();
       }, 3000);
     }
-
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
   }, [coords]);
 
-  // Animate drawer open/close
-  const toggleDrawer = () => {
-    const toValue = drawerOpen ? DRAWER_COLLAPSED_HEIGHT : DRAWER_EXPANDED_HEIGHT;
-    Animated.spring(drawerHeight, {
-      toValue,
-      useNativeDriver: false,
-      bounciness: 4,
-    }).start();
-    setDrawerOpen((prev) => !prev);
-  };
-
-  // Get logged-in user's ID to exclude self from people list
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
-    };
-    getUser();
-  }, []);
-
-  const meRegion = useMemo(() => {
-    if (!coords) return DEFAULT_REGION;
-    return regionFrom(coords.latitude, coords.longitude);
-  }, [coords]);
-
+  // ✅ FETCH PEOPLE
   const fetchPeople = useCallback(async () => {
-    let q = supabase
+    if (!groupId) return;
+
+    const { data, error } = await supabase
       .from("locations")
-      .select("user_id, group_id, latitude, longitude, updated_at");
-      // TODO: once profiles table exists:
-      // .select("user_id, group_id, latitude, longitude, updated_at, profiles(display_name)")
+      .select(`
+        user_id,
+        group_id,
+        latitude,
+        longitude,
+        updated_at,
+        profiles(username)
+      `)
+      .eq("group_id", groupId);
 
-    if (ACTIVE_GROUP_ID) q = q.eq("group_id", ACTIVE_GROUP_ID);
-    if (currentUserId) q = q.neq("user_id", currentUserId);
+    if (error) {
+      console.log("fetchPeople error:", error.message);
+      return;
+    }
 
-    const { data, error: qErr } = await q;
-    if (!qErr && data) setPeopleRows(data);
-    if (qErr) console.log("fetchPeople error:", qErr.message);
-  }, [currentUserId]);
+    if (data) setPeopleRows(data);
+  }, [groupId]);
 
+  // ✅ REALTIME
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!groupId) return;
+
     fetchPeople();
 
     const channel = supabase
-      .channel(`realtime:locations:${ACTIVE_GROUP_ID ?? "all"}`)
+      .channel(`locations-${groupId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "locations" },
+        {
+          event: "*",
+          schema: "public",
+          table: "locations",
+          filter: `group_id=eq.${groupId}`
+        },
         (payload) => {
           const next = payload.new;
-          const old = payload.old;
-
-          if (ACTIVE_GROUP_ID) {
-            if (next?.group_id !== ACTIVE_GROUP_ID && old?.group_id !== ACTIVE_GROUP_ID) return;
-          }
-
-          if (next?.user_id === currentUserId) return;
-
-          if (payload.eventType === "DELETE") {
-            setPeopleRows((prev) => prev.filter((p) => p.user_id !== old.user_id));
-            return;
-          }
-
           if (!next) return;
 
           setPeopleRows((prev) => {
-            const idx = prev.findIndex(
-              (p) => p.user_id === next.user_id && p.group_id === next.group_id
-            );
+            const idx = prev.findIndex((p) => p.user_id === next.user_id);
             if (idx === -1) return [next, ...prev];
-            const copy = prev.slice();
+            const copy = [...prev];
             copy[idx] = next;
             return copy;
           });
@@ -158,23 +449,35 @@ export default function LocationScreen() {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [fetchPeople, currentUserId]);
+  }, [groupId]);
 
   const people = useMemo(() => {
     return (peopleRows || [])
-      .filter((r) => r.latitude != null && r.longitude != null)
+      .filter((r) => r.latitude && r.longitude)
       .map((r) => ({
         id: r.user_id,
-        group_id: r.group_id,
         latitude: r.latitude,
         longitude: r.longitude,
         updatedAtLabel: timeAgoLabel(r.updated_at),
-        name: r.profiles?.display_name ?? "User",
+        name: r.profiles?.username ?? "User",
       }));
   }, [peopleRows]);
 
+  const meRegion = useMemo(() => {
+    if (!coords) return DEFAULT_REGION;
+    return regionFrom(coords.latitude, coords.longitude);
+  }, [coords]);
+
+  // ✅ AUTO CENTER ON SELF
+  useEffect(() => {
+    if (coords && mapRef.current) {
+      mapRef.current.animateToRegion(meRegion, 800);
+    }
+  }, [coords]);
+
   const onSelect = (id) => {
     setSelectedId(id);
+
     if (!mapRef.current) return;
 
     if (id === "me" && coords) {
@@ -183,323 +486,97 @@ export default function LocationScreen() {
     }
 
     const p = people.find((x) => x.id === id);
-    if (p) mapRef.current.animateToRegion(regionFrom(p.latitude, p.longitude), 600);
+    if (p) {
+      mapRef.current.animateToRegion(regionFrom(p.latitude, p.longitude), 600);
+    }
   };
 
-  const recenter = () => onSelect(selectedId);
+  const toggleDrawer = () => {
+    const toValue = drawerOpen ? DRAWER_COLLAPSED_HEIGHT : DRAWER_EXPANDED_HEIGHT;
+
+    Animated.spring(drawerHeight, {
+      toValue,
+      useNativeDriver: false,
+    }).start();
+
+    setDrawerOpen(!drawerOpen);
+  };
 
   return (
     <View style={styles.container}>
-      {/* Full-screen map */}
       <MapView
         ref={(r) => (mapRef.current = r)}
         style={StyleSheet.absoluteFill}
         initialRegion={DEFAULT_REGION}
         showsUserLocation={permissionGranted}
-        showsMyLocationButton={false}
       >
-        {coords?.accuracy ? (
+        {coords?.accuracy && (
           <Circle
             center={{ latitude: coords.latitude, longitude: coords.longitude }}
-            radius={Math.min(Math.max(coords.accuracy, 10), 120)}
-            strokeWidth={1}
-            strokeColor="rgba(66, 133, 244, 0.4)"
-            fillColor="rgba(66, 133, 244, 0.1)"
+            radius={coords.accuracy}
           />
-        ) : null}
+        )}
 
         {people.map((p) => (
           <Marker
-            key={`${p.group_id ?? "nogroup"}:${p.id}`}
+            key={p.id}
             coordinate={{ latitude: p.latitude, longitude: p.longitude }}
             onPress={() => onSelect(p.id)}
-          >
-            <View style={[styles.personDot, selectedId === p.id && styles.personDotSelected]}>
-              <Text style={styles.personDotText}>
-                {(p.name?.[0] ?? "U").toUpperCase()}
-              </Text>
-            </View>
-          </Marker>
+          />
         ))}
       </MapView>
 
-      {/* Fading status toast — appears on first GPS fix, fades after 3s */}
-      <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
-        <View style={styles.toastDot} />
-        <Text style={styles.toastText}>
-          {error
-            ? error
-            : permissionGranted
-              ? coords
-                ? `Live tracking enabled · ${people.length} other${people.length !== 1 ? "s" : ""} visible`
-                : "Getting location…"
-              : "Permission needed"}
-        </Text>
-      </Animated.View>
-
-      {/* Enable location button — only shown if permission not granted */}
-      {!permissionGranted && (
-        <View style={styles.permissionCard}>
-          <Text style={styles.permissionTitle}>Location Access Needed</Text>
-          <Text style={styles.permissionSub}>
-            Enable location so your home group can see where you are.
-          </Text>
-          <Pressable style={styles.primaryBtn} onPress={start}>
-            <Text style={styles.primaryBtnText}>Enable Location</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Recenter button — moves up when drawer is collapsed */}
-      <Animated.View
-        style={[
-          styles.recenterBtnWrap,
-          {
-            bottom: Animated.add(drawerHeight, new Animated.Value(12)),
-          },
-        ]}
-      >
-        <Pressable style={styles.recenterBtn} onPress={recenter}>
-          <Text style={styles.recenterBtnText}>◎</Text>
-        </Pressable>
-      </Animated.View>
-
-      {/* Collapsible people drawer */}
+      
       <Animated.View style={[styles.drawer, { height: drawerHeight }]}>
-
-        {/* Drag handle / header — always visible, tapping toggles drawer */}
-        <TouchableOpacity
-          onPress={toggleDrawer}
-          style={styles.drawerHeader}
-          activeOpacity={0.7}
-        >
-          <View style={styles.drawerHandle} />
-          <Text style={styles.drawerTitle}>
-            People {people.length > 0 ? `(${people.length + 1})` : ""}
-          </Text>
-          <Text style={styles.drawerChevron}>{drawerOpen ? "▾" : "▴"}</Text>
+        <TouchableOpacity onPress={toggleDrawer} style={styles.drawerHeader}>
+          <Text style={styles.drawerTitle}>People ({people.length + 1})</Text>
         </TouchableOpacity>
 
-        {/* Scrollable content — only rendered when open to avoid layout flicker */}
         {drawerOpen && (
           <>
-            {/* Own row */}
-            <Pressable
-              onPress={() => onSelect("me")}
-              style={[styles.row, selectedId === "me" && styles.rowSelected]}
-            >
-              <View style={[styles.avatar, styles.avatarMe]}>
-                <Text style={styles.avatarText}>ME</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>You</Text>
-                <Text style={styles.rowSub}>
-                  {coords
-                    ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`
-                    : "Waiting for GPS…"}
-                </Text>
-              </View>
+            <Pressable onPress={() => onSelect("me")} style={styles.row}>
+              <Text>You</Text>
             </Pressable>
 
-            {/* Group members — scrollable */}
             <FlatList
               data={people}
-              keyExtractor={(i) => `${i.group_id ?? "nogroup"}:${i.id}`}
-              scrollEnabled={true}
-              showsVerticalScrollIndicator={false}
+              keyExtractor={(i) => i.id}
               renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => onSelect(item.id)}
-                  style={[styles.row, selectedId === item.id && styles.rowSelected]}
-                >
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {(item.name?.[0] ?? "U").toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rowTitle}>{item.name}</Text>
-                    <Text style={styles.rowSub}>{item.updatedAtLabel}</Text>
-                  </View>
+                <Pressable onPress={() => onSelect(item.id)} style={styles.row}>
+                  <Text>{item.name}</Text>
+                  <Text>{item.updatedAtLabel}</Text>
                 </Pressable>
               )}
-              ItemSeparatorComponent={() => <View style={styles.sep} />}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>
-                  {ACTIVE_GROUP_ID ? "No other members online" : "No group selected yet"}
-                </Text>
-              }
             />
           </>
         )}
       </Animated.View>
+
+      {!permissionGranted && (
+        <Pressable onPress={start}>
+          <Text>Enable Location</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Fading toast replaces the old always-visible top bar
-  toast: {
-    position: "absolute",
-    top: Platform.select({ ios: 60, android: 30, default: 20 }),
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  toastDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#4CAF50",
-    marginRight: 8,
-  },
-  toastText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#333",
-  },
-
-  permissionCard: {
-    position: "absolute",
-    top: Platform.select({ ios: 60, android: 30, default: 20 }),
-    left: 16,
-    right: 16,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  permissionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
-  permissionSub: { fontSize: 13, color: "#666", marginBottom: 12 },
-
-  primaryBtn: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "#4CAF50",
-  },
-  primaryBtnText: { color: "white", fontWeight: "700" },
-
-  recenterBtnWrap: {
-    position: "absolute",
-    right: 16,
-  },
-  recenterBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  recenterBtnText: { fontSize: 22 },
-
-  // Drawer
   drawer: {
     position: "absolute",
-    left: 0,
-    right: 0,
     bottom: 0,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.97)",
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
+    width: "100%",
+    backgroundColor: "white",
   },
   drawerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  drawerHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#ddd",
-    marginRight: 10,
+    padding: 10,
   },
   drawerTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    flex: 1,
+    fontWeight: "bold",
   },
-  drawerChevron: {
-    fontSize: 16,
-    color: "#999",
-  },
-
   row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    marginHorizontal: 4,
-  },
-  rowSelected: { backgroundColor: "rgba(0,0,0,0.06)" },
-  rowTitle: { fontSize: 14, fontWeight: "600" },
-  rowSub: { fontSize: 12, opacity: 0.7, marginTop: 2 },
-
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(0,0,0,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  avatarMe: { backgroundColor: "#4CAF50" },
-  avatarText: { fontSize: 12, fontWeight: "800", color: "white" },
-
-  sep: { height: 6 },
-
-  personDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#333",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "white",
-  },
-  personDotSelected: { transform: [{ scale: 1.15 }] },
-  personDotText: { color: "white", fontWeight: "800", fontSize: 12 },
-
-  emptyText: {
-    fontSize: 13,
-    color: "#999",
-    fontStyle: "italic",
-    textAlign: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    padding: 10,
   },
 });
+*/
