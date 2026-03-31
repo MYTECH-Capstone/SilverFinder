@@ -218,6 +218,7 @@ export default function TimelineScreen() {
           //   <AuditLog auditLog={auditLog} onUndo={undoLastEdit} />
           // }
         />
+
         <AddTimelineEvent group_ID={groupId as string} userId={user.id} />
       </KeyboardAvoidingView>
     </OverlayProvider>
