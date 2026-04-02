@@ -15,9 +15,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { supabase } from "../lib/supabase";
 
-
 // TYPES
-
 
 interface ElderProfile {
   id: string;
@@ -238,18 +236,21 @@ export default function ReportMissingButton() {
 
             <TextInput
               placeholder="Last Seen Time (e.g. 2:00 PM)"
+              placeholderTextColor= "#999"
               value={lastSeenTime}
               onChangeText={setLastSeenTime}
               style={styles.input}
             />
             <TextInput
               placeholder="Last Seen Location"
+              placeholderTextColor= "#999"
               value={lastSeenLocation}
               onChangeText={setLastSeenLocation}
               style={styles.input}
             />
             <TextInput
               placeholder="Description (Clothing, direction of travel...)"
+              placeholderTextColor= "#999"
               value={description}
               onChangeText={setDescription}
               style={[styles.input, { height: 80 }]}
@@ -308,6 +309,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
+    color: "#333",
+    backgroundColor: "#fff",
   },
   submitBtn: {
     backgroundColor: "#b00020",
