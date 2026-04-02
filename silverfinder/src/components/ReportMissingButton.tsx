@@ -15,9 +15,9 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { supabase } from "../lib/supabase";
 
-/* ============================= */
-/* TYPES                         */
-/* ============================= */
+
+// TYPES
+
 
 interface ElderProfile {
   id: string;
@@ -29,6 +29,7 @@ interface ElderProfile {
   blood_type: string;
   conditions: string;
   role: string;
+  assigned_group_id: string; //
 }
 
 export default function ReportMissingButton() {
@@ -38,7 +39,7 @@ export default function ReportMissingButton() {
   const [selectedElder, setSelectedElder] = useState<ElderProfile | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
 
-  // Form State
+  //Form State
   const [lastSeenLocation, setLastSeenLocation] = useState("");
   const [description, setDescription] = useState("");
   const [lastSeenTime, setLastSeenTime] = useState("");
@@ -47,9 +48,9 @@ export default function ReportMissingButton() {
     if (visible) loadInitialData();
   }, [visible]);
 
-  /* ============================= */
-  /* DATA FETCHING                */
-  /* ============================= */
+  
+  //DATA FETCHING
+  
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -59,79 +60,97 @@ export default function ReportMissingButton() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Get the group the current user belongs to
-      const { data: memberData, error: groupErr } = await supabase
+     // Get all groups this user belongs to 
+      const { data: memberships, error: groupErr } = await supabase
         .from("group_members")
         .select("group_id")
-        .eq("profile_id", user.id)
-        .single();
+        .eq("user_id", user.id);
 
-      if (groupErr || !memberData)
-        throw new Error("Could not find your family group.");
-      setGroupId(memberData.group_id);
+      if (groupErr) throw groupErr;
 
-      // 2. Get all members of that group who are 'elders'
-      const { data: members, error: elderErr } = await supabase
+      if (!memberships || memberships.length === 0) {
+        Alert.alert(
+          "No Groups",
+          "You aren't assigned to any family groups yet.",
+        );
+        return;
+      }
+
+      // Extract just the IDs into an array
+      const groupIds = memberships.map((m) => m.group_id);
+
+      //Fetch all elders belonging to any of those group IDs
+      
+      const { data: memberList, error: elderErr } = await supabase
         .from("group_members")
         .select(
           `
-          profiles (
-            id, full_name, avatar_url, age, 
-            height, weight, blood_type, conditions, role
-          )
-        `,
+        group_id,
+        profiles:user_id (
+          id, full_name, avatar_url, age, height, weight, conditions, role
         )
-        .eq("group_id", memberData.group_id);
-
+      `,
+        )
+        .in("group_id", groupIds); 
       if (elderErr) throw elderErr;
+      console.log("RAW MEMBER LIST:", JSON.stringify(memberList, null, 2));
 
-      // Filter for elders only
-      const elderList = members
-        ?.map((m: any) => m.profiles)
-        .filter((p: ElderProfile) => p.role === "elder");
+      //Filter for elders and attach their group context
+      const elderProfiles = memberList
+        ?.filter((item: any) => {
+          const role = item.profiles?.role?.toLowerCase().trim();
+          console.log(`Checking User: ${item.profiles?.full_name}, Role: ${role}`);
+          return role === "elderly";
+        })
+        .map((item: any) => ({
+          ...item.profiles,
+          assigned_group_id: item.group_id, //Store which group they belong to
+        }));
 
-      setElders(elderList || []);
+      setElders(elderProfiles || []);
+
+      if (elderProfiles?.length === 0) {
+        Alert.alert(
+          "No Elders Found",
+          "You are in groups, but none of them have members marked as 'elderly'.",
+        );
+      }
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      Alert.alert("Load Error", err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ============================= */
-  /* SUBMIT REPORT                */
-  /* ============================= */
-
+  
   const submitReport = async () => {
-    if (!selectedElder || !groupId) {
+    
+    if (!selectedElder) {
       Alert.alert("Error", "Please select an elder.");
       return;
     }
 
     setLoading(true);
-
     try {
-      // Get the most recent GPS location snapshot
       const { data: loc } = await supabase
         .from("locations")
         .select("latitude, longitude")
         .eq("user_id", selectedElder.id)
         .order("updated_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // Insert into missing_reports
       const { error: reportErr } = await supabase
         .from("missing_reports")
         .insert([
           {
             reported_user_id: selectedElder.id,
             reporter_id: user?.id,
-            group_id: groupId,
+            group_id: selectedElder.assigned_group_id, // 
             last_seen_time: lastSeenTime,
             last_seen_place: lastSeenLocation,
             description: description,
@@ -143,7 +162,7 @@ export default function ReportMissingButton() {
 
       if (reportErr) throw reportErr;
 
-      Alert.alert("Success", "Missing person report filed.");
+      Alert.alert("Success", `Report filed for ${selectedElder.full_name}`);
       setVisible(false);
     } catch (err: any) {
       Alert.alert("Submission Failed", err.message);
@@ -152,7 +171,7 @@ export default function ReportMissingButton() {
     }
   };
 
-  /* GENERATE POSTER              */
+  //GENERATE POSTER 
 
   const exportToPDF = async () => {
     if (!selectedElder) return;
