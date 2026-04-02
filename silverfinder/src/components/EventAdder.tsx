@@ -138,7 +138,7 @@ export function EventAdder({ onAddEvent, selectedDate }) {
   if (step === "category") {
     return (
       <View>
-        <Text style={[styles.sectionTitle, { color: "#ff5f15" }]}>
+        <Text style={[styles.sectionTitle, { color: "#1a1a1a" }]}>
           Add New Event
         </Text>
         <View style={styles.infoSection}>
@@ -217,7 +217,7 @@ export function EventAdder({ onAddEvent, selectedDate }) {
 
 const styles = StyleSheet.create({
   infoSection: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",

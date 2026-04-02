@@ -455,19 +455,17 @@ const styles = StyleSheet.create({
     width: 50 
   },
   avatarRing: {
-    // These must be larger than your avatar size (80)
     width: 90, 
     height: 90,
-    borderRadius: 45, // Must be width/2 to be a perfect circle
-    borderWidth: 2.5, // The thickness of the orange ring
-    borderColor: '#e85d04', // The "Silver Finder" Orange
+    borderRadius: 45, 
+    borderWidth: 2.5, 
+    borderColor: '#e85d04', 
     
-    // Centers the inner Avatar perfectly
+  
     alignItems: 'center', 
     justifyContent: 'center',
-    marginBottom: 8, // Spacing before the name
+    marginBottom: 8, 
     
-    // Optional: Add a very light shadow to make the ring "pop"
     elevation: 1, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
