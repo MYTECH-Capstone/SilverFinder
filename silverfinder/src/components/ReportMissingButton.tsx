@@ -21,7 +21,7 @@ import { supabase } from "../lib/supabase";
 
 interface ElderProfile {
   id: string;
-  full_name: string;
+  username: string;
   avatar_url: string;
   age: number;
   height: string;
@@ -87,7 +87,7 @@ export default function ReportMissingButton() {
           `
         group_id,
         profiles:user_id (
-          id, full_name, avatar_url, age, height, weight, conditions, role
+          id, username, avatar_url, age, height, weight, conditions, role
         )
       `,
         )
@@ -99,7 +99,7 @@ export default function ReportMissingButton() {
       const elderProfiles = memberList
         ?.filter((item: any) => {
           const role = item.profiles?.role?.toLowerCase().trim();
-          console.log(`Checking User: ${item.profiles?.full_name}, Role: ${role}`);
+          console.log(`Checking User: ${item.profiles?.username}, Role: ${role}`);
           return role === "elderly";
         })
         .map((item: any) => ({
@@ -162,7 +162,7 @@ export default function ReportMissingButton() {
 
       if (reportErr) throw reportErr;
 
-      Alert.alert("Success", `Report filed for ${selectedElder.full_name}`);
+      Alert.alert("Success", `Report filed for ${selectedElder.username}`);
       setVisible(false);
     } catch (err: any) {
       Alert.alert("Submission Failed", err.message);
@@ -180,7 +180,7 @@ export default function ReportMissingButton() {
       <html>
         <body style="font-family: Arial; text-align:center; padding:40px; border: 20px solid #b00020;">
           <h1 style="color:#b00020; font-size: 50px; margin-bottom:0;">MISSING</h1>
-          <h2 style="font-size: 30px;">${selectedElder.full_name}</h2>
+          <h2 style="font-size: 30px;">${selectedElder.username}</h2>
           <img src="${selectedElder.avatar_url}" style="width:300px; height:300px; border-radius:10px; border: 5px solid black;" />
           
           <div style="margin: 20px 0; font-size: 20px;">
@@ -231,7 +231,7 @@ export default function ReportMissingButton() {
                     source={{ uri: elder.avatar_url }}
                     style={styles.avatar}
                   />
-                  <Text>{elder.full_name}</Text>
+                  <Text>{elder.username}</Text>
                 </Pressable>
               ))}
             </View>
