@@ -1,3 +1,4 @@
+//this is a comment by Rachel
 import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Calendar, toDateId } from "@marceloterreiro/flash-calendar";
