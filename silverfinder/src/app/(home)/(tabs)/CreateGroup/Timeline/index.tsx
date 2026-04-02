@@ -212,7 +212,7 @@ export default function TimelineScreen() {
           renderItem={({ item }) => (
             <TimelineItem event={item} onUpdate={updateDetails} />
           )}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, backgroundColor: "#fff8f3", flexGrow: 1 }}
           ListEmptyComponent={<EmptyTimeline />}
           // ListFooterComponent={
           //   <AuditLog auditLog={auditLog} onUndo={undoLastEdit} />

@@ -75,13 +75,14 @@ export default function AddTimelineEvent({
   }
 
   return (
-    <View>
-      <Pressable style={styles.button} onPress={() => openModal("missing")}>
+    /*  Report missing button is remooved - to be added back later
+    <Pressable style={styles.button} onPress={() => openModal("missing")}>
         <Text style={styles.buttonText}>Report Missing</Text>
       </Pressable>
-
+      */
+    <View>
       <Pressable
-        style={[styles.button, { backgroundColor: "#2563eb" }]}
+        style={[styles.button, { backgroundColor: "#e85d04" }]}
         onPress={() => openModal("custom")}
       >
         <Text style={styles.buttonText}>Add Timeline Event</Text>
@@ -185,7 +186,7 @@ export default function AddTimelineEvent({
 const styles = StyleSheet.create({
   button: {
     padding: 12,
-    backgroundColor: "#dc2626",
+    backgroundColor: "#e85d04",
     borderRadius: 8,
     alignItems: "center",
     marginVertical: 4,
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
   },
   typeButtonSelected: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#f78946de",
   },
   typeButtonText: {
     color: "#111827",
