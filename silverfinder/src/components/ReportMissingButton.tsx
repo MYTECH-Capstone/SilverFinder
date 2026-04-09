@@ -176,22 +176,60 @@ export default function ReportMissingButton() {
 
     const html = `
       <html>
-        <body style="font-family: Arial; text-align:center; padding:40px; border: 20px solid #b00020;">
-          <h1 style="color:#b00020; font-size: 50px; margin-bottom:0;">MISSING</h1>
-          <h2 style="font-size: 30px;">${selectedElder.username}</h2>
-          <img src="${selectedElder.avatar_url}" style="width:300px; height:300px; border-radius:10px; border: 5px solid black;" />
+      <head>
+        <style>
+          body { font-family: Arial; margin: 0; padding: 20px; background-color: white; }
+          .poster { background-color: white; max-width: 800px; margin: 0 auto; overflow: hidden; }
+          p { margin: 0; }
+        </style>
+      </head>
+      <body>
+        <div class="poster" style="border: 20px solid #cc0000; margin-bottom: 10px;">
           
-          <div style="margin: 20px 0; font-size: 20px;">
-            <p><strong>Age:</strong> ${selectedElder.age || "N/A"} | <strong>Height:</strong> ${selectedElder.height || "N/A"}</p>
-            <p><strong>Medical:</strong> ${selectedElder.conditions || "None listed"}</p>
+          <div style="text-align: center; padding: 40px 20px 20px 20px; ">
+            <h1 style="color: #cc0000; font-size: 85px; font-weight: 1000; margin: 0; letter-spacing: 15px; line-height: 1;">MISSING</h1>
           </div>
 
-          <div style="background: #f4f4f4; padding: 20px; border-radius: 10px; text-align: left;">
-            <p><strong>Last Seen:</strong> ${lastSeenTime} at ${lastSeenLocation}</p>
-            <p><strong>Description:</strong> ${description}</p>
+          <div style="padding: 30px; color: black;">
+            
+            <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+              <img src="${selectedElder.avatar_url}" style="width: 250px; height: 300px; border: 5px solid black; object-fit: cover; border-radius: 4px;" />
+              
+              <div style="flex: 1;">
+                <h2 style="font-size: 42px; font-weight: 900; margin: 0; color: #1a1a1a; border-bottom: 8px solid #cc0000; padding-bottom: 10px; text-transform: uppercase;">
+                  ${selectedElder.username}
+                </h2>
+                <div style="margin-top: 20px; font-size: 19px; line-height: 1.8; color: black">
+                  <p><strong>AGE:</strong> ${selectedElder.age || "—"}</p>
+                  <p><strong>HEIGHT:</strong> ${selectedElder.height || "—"}</p>
+                  <p><strong>WEIGHT:</strong> ${selectedElder.weight || "—"}</p>
+                  <p style="color: #cc0000; margin-top: 10px;"><strong>MEDICAL CONDITIONS:</strong> ${selectedElder.conditions || "None Listed"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div style="background-color: white; color: black; margin-bottom: 25px;">
+              <p style="letter-spacing: 2px; font-size: 14px; font-weight: 900; color: #cc0000;">LAST SEEN DETAILS</p>
+              <p style="font-size: 20px; margin-top: 5px; font-weight: 500;">
+                ${lastSeenTime || "Not Specified"} at ${lastSeenLocation || "Location Not Specified"}
+              </p>
+            </div>
+
+            <div>
+              <p style="letter-spacing: 2px; font-size: 14px; font-weight: 900; color: #cc0000; text-transform: uppercase; margin-bottom: 5px; ">Physical Description / Details</p>
+              <p style="font-size: 18px; line-height: 1.5; color: #000000; font-weight: 500;">${description || "No specific details provided."}</p>
+            </div>
+
           </div>
-          <h3 style="color: #b00020; margin-top: 30px;">PLEASE CONTACT AUTHORITIES IMMEDIATELY</h3>
-        </body>
+
+          <div style="background-color: white; color: black; text-align: center; padding: 30px; border-top: 2px solid #eee;">
+            <p style="letter-spacing: 3px; margin: 0; color: #000000;">IF SEEN, PLEASE IMMEDIATELY CALL</p>
+            <h1 style="font-size: 60px; font-weight: 900; margin: 5px 0; letter-spacing: 5px; color: #cc0000;">911</h1>
+            <p style="margin: 0; color: #666; font-size: 11px;">Created by: Silver Finder App </p>
+          </div>
+
+        </div>
+      </body>
       </html>
     `;
 
@@ -286,26 +324,35 @@ const styles = StyleSheet.create({
     margin: 20,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "bold" },
-  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  buttonText: { 
+    color: "#fff", 
+    textTransform: "uppercase",
+    fontWeight: 700, 
+    width: "100%",
+    textAlign: "center",
+  },
+  modalContainer: { flex: 1, backgroundColor: "#fff8f3" },
   scrollContent: { padding: 25 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, paddingTop: 60 },
   label: { fontWeight: "bold", marginBottom: 10 },
-  elderList: { marginBottom: 20 },
+  elderList: { marginBottom: 20 , },
   elderCard: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#f0d5be",
     borderRadius: 8,
     marginBottom: 8,
+    backgroundColor: "#fff",
+    shadowColor: "#ff5f15",
+    shadowOffset: { width: 0, height: 2 },
   },
-  selectedCard: { borderColor: "#b00020", backgroundColor: "#fff5f5" },
+  selectedCard: { borderColor: "#ff5f15", backgroundColor: "#ffdac0" },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#f0d5be",
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
@@ -313,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   submitBtn: {
-    backgroundColor: "#b00020",
+    backgroundColor: "#e85d04",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
