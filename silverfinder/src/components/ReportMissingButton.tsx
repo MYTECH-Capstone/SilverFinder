@@ -46,9 +46,7 @@ export default function ReportMissingButton() {
     if (visible) loadInitialData();
   }, [visible]);
 
-  
   //DATA FETCHING
-  
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -58,7 +56,7 @@ export default function ReportMissingButton() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-     // Get all groups this user belongs to 
+      // Get all groups this user belongs to
       const { data: memberships, error: groupErr } = await supabase
         .from("group_members")
         .select("group_id")
@@ -78,7 +76,6 @@ export default function ReportMissingButton() {
       const groupIds = memberships.map((m) => m.group_id);
 
       //Fetch all elders belonging to any of those group IDs
-      
       const { data: memberList, error: elderErr } = await supabase
         .from("group_members")
         .select(
@@ -89,7 +86,7 @@ export default function ReportMissingButton() {
         )
       `,
         )
-        .in("group_id", groupIds); 
+        .in("group_id", groupIds);
       if (elderErr) throw elderErr;
       console.log("RAW MEMBER LIST:", JSON.stringify(memberList, null, 2));
 
@@ -97,13 +94,28 @@ export default function ReportMissingButton() {
       const elderProfiles = memberList
         ?.filter((item: any) => {
           const role = item.profiles?.role?.toLowerCase().trim();
-          console.log(`Checking User: ${item.profiles?.username}, Role: ${role}`);
+          console.log(
+            `Checking User: ${item.profiles?.username}, Role: ${role}`,
+          );
           return role === "elderly";
         })
-        .map((item: any) => ({
-          ...item.profiles,
-          assigned_group_id: item.group_id, //Store which group they belong to
-        }));
+        .map((item: any) => {
+          // 1. Get the raw JPEG name from the database
+          const rawAvatar = item.profiles?.avatar_url;
+
+          // 2. Build the full Supabase URL
+          // (Make sure "avatars" matches your actual Supabase storage bucket name!)
+          const fullAvatarUrl = rawAvatar
+            ? supabase.storage.from("avatars").getPublicUrl(rawAvatar).data
+                .publicUrl
+            : null;
+
+          return {
+            ...item.profiles,
+            avatar_url: fullAvatarUrl, // Replace the JPEG name with the full HTTPS link
+            assigned_group_id: item.group_id, //Store which group they belong to
+          };
+        });
 
       setElders(elderProfiles || []);
 
@@ -120,9 +132,7 @@ export default function ReportMissingButton() {
     }
   };
 
-  
   const submitReport = async () => {
-    
     if (!selectedElder) {
       Alert.alert("Error", "Please select an elder.");
       return;
@@ -148,7 +158,7 @@ export default function ReportMissingButton() {
           {
             reported_user_id: selectedElder.id,
             reporter_id: user?.id,
-            group_id: selectedElder.assigned_group_id, // 
+            group_id: selectedElder.assigned_group_id, //
             last_seen_time: lastSeenTime,
             last_seen_place: lastSeenLocation,
             description: description,
@@ -169,7 +179,7 @@ export default function ReportMissingButton() {
     }
   };
 
-  //GENERATE POSTER 
+  //GENERATE POSTER
 
   const exportToPDF = async () => {
     if (!selectedElder) return;
@@ -179,7 +189,7 @@ export default function ReportMissingButton() {
         <body style="font-family: Arial; text-align:center; padding:40px; border: 20px solid #b00020;">
           <h1 style="color:#b00020; font-size: 50px; margin-bottom:0;">MISSING</h1>
           <h2 style="font-size: 30px;">${selectedElder.username}</h2>
-          <img src="${selectedElder.avatar_url}" style="width:300px; height:300px; border-radius:10px; border: 5px solid black;" />
+          <img src="${selectedElder.avatar_url || `https://ui-avatars.com/api/?name=${selectedElder.username}&size=300&background=b00020&color=fff`}" style="width:300px; height:300px; border-radius:10px; border: 5px solid black; object-fit: cover;" />
           
           <div style="margin: 20px 0; font-size: 20px;">
             <p><strong>Age:</strong> ${selectedElder.age || "N/A"} | <strong>Height:</strong> ${selectedElder.height || "N/A"}</p>
@@ -199,7 +209,7 @@ export default function ReportMissingButton() {
     await Sharing.shareAsync(uri);
   };
 
-  /* UI RENDERING                 */
+  // UI RENDERING
 
   return (
     <>
@@ -226,7 +236,11 @@ export default function ReportMissingButton() {
                   onPress={() => setSelectedElder(elder)}
                 >
                   <Image
-                    source={{ uri: elder.avatar_url }}
+                    source={{
+                      uri: elder.avatar_url
+                        ? elder.avatar_url
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(elder.username)}&background=b00020&color=fff`,
+                    }}
                     style={styles.avatar}
                   />
                   <Text>{elder.username}</Text>
@@ -236,21 +250,21 @@ export default function ReportMissingButton() {
 
             <TextInput
               placeholder="Last Seen Time (e.g. 2:00 PM)"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={lastSeenTime}
               onChangeText={setLastSeenTime}
               style={styles.input}
             />
             <TextInput
               placeholder="Last Seen Location"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={lastSeenLocation}
               onChangeText={setLastSeenLocation}
               style={styles.input}
             />
             <TextInput
               placeholder="Description (Clothing, direction of travel...)"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={description}
               onChangeText={setDescription}
               style={[styles.input, { height: 80 }]}
