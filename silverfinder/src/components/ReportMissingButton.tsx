@@ -81,7 +81,6 @@ export default function ReportMissingButton() {
       const groupIds = memberships.map((m) => m.group_id);
 
       //Fetch all elders belonging to any of those group IDs
-
       const { data: memberList, error: elderErr } = await supabase
         .from("group_members")
         .select(
@@ -105,11 +104,23 @@ export default function ReportMissingButton() {
           );
           return role === "elderly";
         })
-        .map((item: any) => ({
-          ...item.profiles,
-          avatar_url: getAvatarUrl(item?.profiles.avatar_url), // pull full URL,
-          assigned_group_id: item.group_id, //Store which group they belong to
-        }));
+        .map((item: any) => {
+          // 1. Get the raw JPEG name from the database
+          const rawAvatar = item.profiles?.avatar_url;
+
+          // 2. Build the full Supabase URL
+          // (Make sure "avatars" matches your actual Supabase storage bucket name!)
+          const fullAvatarUrl = rawAvatar
+            ? supabase.storage.from("avatars").getPublicUrl(rawAvatar).data
+                .publicUrl
+            : null;
+
+          return {
+            ...item.profiles,
+            avatar_url: fullAvatarUrl, // Replace the JPEG name with the full HTTPS link
+            assigned_group_id: item.group_id, //Store which group they belong to
+          };
+        });
 
       setElders(elderProfiles || []);
 
@@ -264,7 +275,8 @@ export default function ReportMissingButton() {
     const { uri } = await Print.printToFileAsync({ html });
     await Sharing.shareAsync(uri);
   };
-  /* UI RENDERING                 */
+
+  // UI RENDERING
 
   return (
     <>
@@ -291,7 +303,11 @@ export default function ReportMissingButton() {
                   onPress={() => setSelectedElder(elder)}
                 >
                   <Image
-                    source={{ uri: elder.avatar_url }}
+                    source={{
+                      uri: elder.avatar_url
+                        ? elder.avatar_url
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(elder.username)}&background=b00020&color=fff`,
+                    }}
                     style={styles.avatar}
                   />
                   <Text>{elder.username}</Text>
