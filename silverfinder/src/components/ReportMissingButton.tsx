@@ -17,10 +17,15 @@ import { supabase } from "../lib/supabase";
 
 // TYPES
 
+function getAvatarUrl(path: string | null) {
+  if (!path) return null;
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return data.publicUrl;
+}
 interface ElderProfile {
   id: string;
   username: string;
-  avatar_url: string;
+  avatar_url: string | null;
   age: number;
   height: string;
   weight: string;
@@ -46,9 +51,7 @@ export default function ReportMissingButton() {
     if (visible) loadInitialData();
   }, [visible]);
 
-  
   //DATA FETCHING
-  
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -58,7 +61,7 @@ export default function ReportMissingButton() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-     // Get all groups this user belongs to 
+      // Get all groups this user belongs to
       const { data: memberships, error: groupErr } = await supabase
         .from("group_members")
         .select("group_id")
@@ -78,7 +81,7 @@ export default function ReportMissingButton() {
       const groupIds = memberships.map((m) => m.group_id);
 
       //Fetch all elders belonging to any of those group IDs
-      
+
       const { data: memberList, error: elderErr } = await supabase
         .from("group_members")
         .select(
@@ -89,7 +92,7 @@ export default function ReportMissingButton() {
         )
       `,
         )
-        .in("group_id", groupIds); 
+        .in("group_id", groupIds);
       if (elderErr) throw elderErr;
       console.log("RAW MEMBER LIST:", JSON.stringify(memberList, null, 2));
 
@@ -97,11 +100,14 @@ export default function ReportMissingButton() {
       const elderProfiles = memberList
         ?.filter((item: any) => {
           const role = item.profiles?.role?.toLowerCase().trim();
-          console.log(`Checking User: ${item.profiles?.username}, Role: ${role}`);
+          console.log(
+            `Checking User: ${item.profiles?.username}, Role: ${role}`,
+          );
           return role === "elderly";
         })
         .map((item: any) => ({
           ...item.profiles,
+          avatar_url: getAvatarUrl(item?.profiles.avatar_url), // pull full URL,
           assigned_group_id: item.group_id, //Store which group they belong to
         }));
 
@@ -120,9 +126,30 @@ export default function ReportMissingButton() {
     }
   };
 
-  
+  // submit missing person to timeline
+
+  async function submitTimelineEvent(user) {
+    const type = "missing";
+    const label = "Report Missing";
+
+    const details = `ALERT: ${selectedElder?.username} has been reported missing.\n   >Last seen: ${lastSeenTime || "Unknown"}\n   >Last known location: ${lastSeenLocation || "Unknown"}\n   >Recent Description: ${description || "Unknown"}`;
+
+    const { error } = await supabase.from("timeline_events").insert([
+      {
+        group_id: selectedElder?.assigned_group_id,
+        user_id: user?.id,
+        type,
+        label,
+        details: details || null,
+      },
+    ]);
+
+    if (error) {
+      Alert.alert("Failed to add timeline event", error.message);
+    }
+  }
+
   const submitReport = async () => {
-    
     if (!selectedElder) {
       Alert.alert("Error", "Please select an elder.");
       return;
@@ -148,7 +175,7 @@ export default function ReportMissingButton() {
           {
             reported_user_id: selectedElder.id,
             reporter_id: user?.id,
-            group_id: selectedElder.assigned_group_id, // 
+            group_id: selectedElder.assigned_group_id, //
             last_seen_time: lastSeenTime,
             last_seen_place: lastSeenLocation,
             description: description,
@@ -157,6 +184,7 @@ export default function ReportMissingButton() {
             status: "active",
           },
         ]);
+      submitTimelineEvent(user);
 
       if (reportErr) throw reportErr;
 
@@ -169,7 +197,7 @@ export default function ReportMissingButton() {
     }
   };
 
-  //GENERATE POSTER 
+  //GENERATE POSTER
 
   const exportToPDF = async () => {
     if (!selectedElder) return;
@@ -236,7 +264,6 @@ export default function ReportMissingButton() {
     const { uri } = await Print.printToFileAsync({ html });
     await Sharing.shareAsync(uri);
   };
-
   /* UI RENDERING                 */
 
   return (
@@ -274,21 +301,21 @@ export default function ReportMissingButton() {
 
             <TextInput
               placeholder="Last Seen Time (e.g. 2:00 PM)"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={lastSeenTime}
               onChangeText={setLastSeenTime}
               style={styles.input}
             />
             <TextInput
               placeholder="Last Seen Location"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={lastSeenLocation}
               onChangeText={setLastSeenLocation}
               style={styles.input}
             />
             <TextInput
               placeholder="Description (Clothing, direction of travel...)"
-              placeholderTextColor= "#999"
+              placeholderTextColor="#999"
               value={description}
               onChangeText={setDescription}
               style={[styles.input, { height: 80 }]}
@@ -324,10 +351,10 @@ const styles = StyleSheet.create({
     margin: 20,
     alignItems: "center",
   },
-  buttonText: { 
-    color: "#fff", 
+  buttonText: {
+    color: "#fff",
     textTransform: "uppercase",
-    fontWeight: 700, 
+    fontWeight: 700,
     width: "100%",
     textAlign: "center",
   },
@@ -335,7 +362,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 25 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, paddingTop: 60 },
   label: { fontWeight: "bold", marginBottom: 10 },
-  elderList: { marginBottom: 20 , },
+  elderList: { marginBottom: 20 },
   elderCard: {
     flexDirection: "row",
     alignItems: "center",
