@@ -7,8 +7,13 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  TouchableWithoutFeedback,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { ScrollView } from "react-native-gesture-handler";
 
 type AddTimelineEventProps = {
   group_ID: any;
@@ -70,13 +75,14 @@ export default function AddTimelineEvent({
   }
 
   return (
-    <View>
-      <Pressable style={styles.button} onPress={() => openModal("missing")}>
+    /*  Report missing button is remooved - to be added back later
+    <Pressable style={styles.button} onPress={() => openModal("missing")}>
         <Text style={styles.buttonText}>Report Missing</Text>
       </Pressable>
-
+      */
+    <View>
       <Pressable
-        style={[styles.button, { backgroundColor: "#2563eb" }]}
+        style={[styles.button, { backgroundColor: "#e85d04" }]}
         onPress={() => openModal("custom")}
       >
         <Text style={styles.buttonText}>Add Timeline Event</Text>
@@ -87,77 +93,89 @@ export default function AddTimelineEvent({
         animationType="slide"
         transparent
         onRequestClose={() => setModalVisible(false)}
+        style={{}}
       >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Add Timeline Event</Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Add Timeline Event</Text>
 
-            {/* Type selector */}
-            <View style={{ marginBottom: 12 }}>
-              {EVENT_TYPES.map((e) => (
-                <Pressable
-                  key={e.value}
-                  style={[
-                    styles.typeButton,
-                    type === e.value && styles.typeButtonSelected,
-                  ]}
-                  onPress={() => {
-                    setType(e.value);
-                    setLabel(e.label);
-                  }}
-                >
-                  <Text
+              {/* Type selector */}
+              <View style={{ marginBottom: 12 }}>
+                {EVENT_TYPES.map((e) => (
+                  <Pressable
+                    key={e.value}
                     style={[
-                      styles.typeButtonText,
-                      type === e.value && { fontWeight: "700" },
+                      styles.typeButton,
+                      type === e.value && styles.typeButtonSelected,
                     ]}
+                    onPress={() => {
+                      setType(e.value);
+                      setLabel(e.label);
+                    }}
                   >
-                    {e.label}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        type === e.value && { fontWeight: "700" },
+                      ]}
+                    >
+                      {e.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              {/* Label input */}
+              <TextInput
+                value={label}
+                onChangeText={setLabel}
+                placeholder="Event label"
+                style={styles.input}
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
+              />
+
+              {/* Details input */}
+
+              <TextInput
+                value={details}
+                onChangeText={setDetails}
+                placeholder="Optional details"
+                style={[styles.input, { height: 80 }]}
+                multiline
+                returnKeyType="done"
+              />
+
+              {/* Actions */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Pressable
+                  onPress={() => setModalVisible(false)}
+                  style={[
+                    styles.button,
+                    { backgroundColor: "#9ca3af", flex: 1, marginRight: 8 },
+                  ]}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
                 </Pressable>
-              ))}
-            </View>
 
-            {/* Label input */}
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Event label"
-              style={styles.input}
-            />
-
-            {/* Details input */}
-            <TextInput
-              value={details}
-              onChangeText={setDetails}
-              placeholder="Optional details"
-              style={[styles.input, { height: 80 }]}
-              multiline
-            />
-
-            {/* Actions */}
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Pressable
-                onPress={() => setModalVisible(false)}
-                style={[
-                  styles.button,
-                  { backgroundColor: "#9ca3af", flex: 1, marginRight: 8 },
-                ]}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={submitEvent}
-                style={[styles.button, { flex: 1 }]}
-              >
-                <Text style={styles.buttonText}>Add</Text>
-              </Pressable>
+                <Pressable
+                  onPress={submitEvent}
+                  style={[styles.button, { flex: 1 }]}
+                >
+                  <Text style={styles.buttonText}>Add</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -168,7 +186,7 @@ export default function AddTimelineEvent({
 const styles = StyleSheet.create({
   button: {
     padding: 12,
-    backgroundColor: "#dc2626",
+    backgroundColor: "#e85d04",
     borderRadius: 8,
     alignItems: "center",
     marginVertical: 4,
@@ -208,7 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
   },
   typeButtonSelected: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#f78946de",
   },
   typeButtonText: {
     color: "#111827",

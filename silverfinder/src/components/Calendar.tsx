@@ -10,7 +10,7 @@ import {
   lastDayOfMonth,
 } from "date-fns";
 
-const linearAccent = "#f89f2bff";
+const linearAccent = "#e85d04";
 
 const linearTheme: CalendarTheme = {
   rowMonth: { content: { fontSize: 0, display: "none" } },
@@ -21,7 +21,7 @@ const linearTheme: CalendarTheme = {
       borderStyle: "solid",
     },
   },
-  itemWeekName: { content: { color: "#f89f2bff" } },
+  itemWeekName: { content: { fontWeight: '700',color: "#e85d04" } },
   itemDayContainer: { activeDayFiller: { backgroundColor: linearAccent } },
   itemDay: {
     idle: ({ isPressed, isWeekend }) => ({
@@ -37,7 +37,7 @@ const linearTheme: CalendarTheme = {
         borderRadius: isPressed ? 4 : 30,
         backgroundColor: isPressed ? linearAccent : "transparent",
       },
-      content: { color: isPressed ? "#fdbb65ff" : "#6589ff" },
+      content: { fontWeight: '700', color: isPressed ? "#fdbb65ff" : "#6589ff" },
     }),
     active: ({ isStartOfRange, isEndOfRange }) => ({
       container: {
@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   monthText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#ff5f15",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1a1a1a",
   },
 });

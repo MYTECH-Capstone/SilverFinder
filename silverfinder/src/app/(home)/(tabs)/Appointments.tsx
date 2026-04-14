@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  StatusBar,
 } from "react-native";
 import { BasicCalendar } from "../../../components/Calendar";
 import { EventsList } from "../../../components/EventList";
@@ -16,6 +17,8 @@ import { CalendarShare } from "../../../components/CalendarShare";
 import { useAuth } from "../../../providers/AuthProvider";
 import ReportMissingButton from "../../../components/ReportMissingButton";
 import { requestCalendarPermissions } from "../../../components/calService";
+import AntDesign from "@expo/vector-icons/AntDesign";
+
 type Event = {
   subject: string;
   date: string;
@@ -28,6 +31,8 @@ type Event = {
 };
 
 const STORAGE_KEY = "@local_events";
+
+
 
 export default function MainTabScreen() {
   const [calendarGranted, setCalendarGranted] = useState(false);
@@ -108,8 +113,16 @@ export default function MainTabScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#ffd8a8" }}>
-      <ScrollView style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: "#fff8f3" }}>
+     <StatusBar barStyle="dark-content" /> 
+     <ScrollView style={styles.container}>
+     <View style={styles.topBar}>
+             <View style={styles.topBarSpacer} />
+             <Text style={styles.topBarTitle}>Appointments</Text>
+             <View style={styles.topBarSpacer} />
+           </View>
+     
+        
         <ReportMissingButton />
 
         <View style={styles.infoSection}>
@@ -167,17 +180,50 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
+    borderColor: "#f0d5be",
+    borderWidth: 2,
+    shadowColor: "#e85d04",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   infoSectionUpcoming: {
     backgroundColor: "white",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
+    borderColor: "#f0d5be",
+    borderWidth: 2,
+    shadowColor: "#e85d04",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     marginBottom: 5,
-    color: "#ff5f15",
+    color: "#1a1a1a",
   },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 50,
+    paddingBottom: 10,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1.5,
+    borderColor: '#f0d5be',
+  }, 
+  topBarTitle: { 
+    color: '#1a1a1a', 
+    fontSize: 22, 
+    fontWeight: '700' 
+  },
+  topBarSpacer: { 
+    width: 50 ,
+  }
 });
